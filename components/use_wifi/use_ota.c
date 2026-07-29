@@ -57,23 +57,39 @@ esp_err_t _http_event_handler(esp_http_client_event_t *evt)
     return ESP_OK;
 }
 //校验是否需要升级(版本比较)
+/* 版本格式：SL_ESP_YYYY_A_B_C / BC_ESP_YYYY_A_B_C，取末三段数字拼接比较 */
+static int ota_version_code(const char *ver)
+{
+    int a = 0, b = 0, c = 0;
+
+    if (ver == NULL || ver[0] == '\0') {
+        return -1;
+    }
+    /* SL_ESP_2026_1_0_0 → 忽略前两段与年份，取 A_B_C */
+    if (sscanf(ver, "%*[^_]_%*[^_]_%*d_%d_%d_%d", &a, &b, &c) != 3) {
+        /* 兼容旧硬编码下标：??_ESP_YYYY_A_B_C 且 A/B/C 为单位数字 */
+        if (strlen(ver) > 16U) {
+            a = ver[12] - '0';
+            b = ver[14] - '0';
+            c = ver[16] - '0';
+        } else {
+            return -1;
+        }
+    }
+    return a * 100 + b * 10 + c;
+}
+
 esp_err_t device_firmware_version_check(void)
 {
-    char running_version[4] = {0};
-    char upgrade_version[4] = {0};
+    int run_code;
+    int up_code;
+
     ESP_LOGI(TAG, "Running version: %s\nupgrade version: %s\n", device_info->ota.running_version,
              device_info->ota.upgrade_version);
-    running_version[0] = device_info->ota.running_version[12];
-    running_version[1] = device_info->ota.running_version[14];
-    running_version[2] = device_info->ota.running_version[16];
-    printf("%c %c %c\n", running_version[0], running_version[1], running_version[2]);
-    upgrade_version[0] = device_info->ota.upgrade_version[12];
-    upgrade_version[1] = device_info->ota.upgrade_version[14];
-    upgrade_version[2] = device_info->ota.upgrade_version[16];
-    printf("%c %c %c\n", upgrade_version[0], upgrade_version[1], upgrade_version[2]);
-    printf("%s %s\n", running_version, upgrade_version);
-    printf("%d %d\n", atoi(running_version), atoi(upgrade_version));
-    if (atoi(running_version) == atoi(upgrade_version))
+    run_code = ota_version_code(device_info->ota.running_version);
+    up_code = ota_version_code(device_info->ota.upgrade_version);
+    ESP_LOGI(TAG, "version code run=%d upgrade=%d", run_code, up_code);
+    if (run_code >= 0 && up_code >= 0 && run_code == up_code)
     {
         ESP_LOGW(TAG, "Current running version is the same as a new. We will not continue the update.");
         //return ESP_FAIL;

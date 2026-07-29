@@ -1,0 +1,155 @@
+*************************** START ****************************
+Chip: ESP32
+Download mode: uart
+Start time: 20260704-11:05
+Connect baud: 115200
+Com:COM21
+connecting...
+MAC: [104, 9, 71, 46, 227, 216]
+crc_cal: 34
+crc_read: 34
+crc_test: 0
+ESP32 MAC CRC OK
+manufacturer_id: 0x46
+device_id: 0x4018
+fs:0x200200
+address/file: 4096 D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\bootloader.bin
+address/file: 32768 D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\partition-table.bin
+address/file: 53248 D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\ota_data_initial.bin
+address/file: 65536 D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\bochuang-program.bin
+address/file: 6356992 D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\KSPSBED00002821.bin
+Wrote 28544 bytes (17187 compressed) at 0x00001000 in 0.3 seconds (effective 711.2 kbit/s)...
+Wrote 3072 bytes (156 compressed) at 0x00008000 in 0.0 seconds (effective 1761.7 kbit/s)...
+Wrote 8192 bytes (31 compressed) at 0x0000d000 in 0.0 seconds (effective 2856.2 kbit/s)...
+Wrote 1514192 bytes (908019 compressed) at 0x00010000 in 12.2 seconds (effective 992.8 kbit/s)...
+Wrote 92 bytes (73 compressed) at 0x00610000 in 0.0 seconds (effective 122.0 kbit/s)...
+File: D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\bootloader.bin
+File  md5: fc1ccb1bd722434751b3fac8f5ee8749
+Flash md5: 29e450de404d5f68a649e5ccc7460edf
+MD5 of file does not match data in flash!
+*************************** START ****************************
+Chip: ESP32
+Download mode: uart
+Start time: 20260704-11:06
+Connect baud: 115200
+Com:COM21
+connecting...
+MAC: [104, 9, 71, 46, 227, 216]
+crc_cal: 34
+crc_read: 34
+crc_test: 0
+ESP32 MAC CRC OK
+manufacturer_id: 0x46
+device_id: 0x4018
+fs:0x200200
+address/file: 4096 D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\bootloader.bin
+address/file: 32768 D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\partition-table.bin
+address/file: 53248 D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\ota_data_initial.bin
+address/file: 65536 D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\bochuang-program.bin
+address/file: 6356992 D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\KSPSBED00002821.bin
+Wrote 28544 bytes (17187 compressed) at 0x00001000 in 0.5 seconds (effective 489.8 kbit/s)...
+Wrote 3072 bytes (156 compressed) at 0x00008000 in 0.0 seconds (effective 1582.9 kbit/s)...
+Wrote 8192 bytes (31 compressed) at 0x0000d000 in 0.0 seconds (effective 3001.9 kbit/s)...
+Wrote 1514192 bytes (908019 compressed) at 0x00010000 in 20.9 seconds (effective 581.0 kbit/s)...
+Wrote 92 bytes (73 compressed) at 0x00610000 in 0.0 seconds (effective 39.2 kbit/s)...
+File: D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\bootloader.bin
+File  md5: fc1ccb1bd722434751b3fac8f5ee8749
+Flash md5: 827e380b7f228aca0c70949b4ad12af9
+MD5 of file does not match data in flash!
+*************************** START ****************************
+Chip: ESP32
+Download mode: uart
+Start time: 20260704-11:07
+Connect baud: 115200
+Com:COM21
+connecting...
+*************************** START ****************************
+Chip: ESP32
+Download mode: uart
+Start time: 20260704-11:07
+Connect baud: 115200
+Com:COM21
+connecting...
+MAC: [104, 9, 71, 46, 227, 216]
+crc_cal: 34
+crc_read: 34
+crc_test: 0
+ESP32 MAC CRC OK
+manufacturer_id: 0x46
+device_id: 0x4018
+fs:0x200200
+address/file: 4096 D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\bootloader.bin
+address/file: 32768 D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\partition-table.bin
+address/file: 53248 D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\ota_data_initial.bin
+address/file: 65536 D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\bochuang-program.bin
+address/file: 6356992 D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\KSPSBED00002821.bin
+Wrote 28544 bytes (17187 compressed) at 0x00001000 in 1.0 seconds (effective 225.9 kbit/s)...
+Wrote 3072 bytes (156 compressed) at 0x00008000 in 0.0 seconds (effective 740.8 kbit/s)...
+Wrote 8192 bytes (31 compressed) at 0x0000d000 in 0.0 seconds (effective 2087.3 kbit/s)...
+*************************** START ****************************
+Chip: ESP32
+Download mode: uart
+Start time: 20260704-11:08
+Connect baud: 115200
+Com:COM21
+connecting...
+*************************** START ****************************
+Chip: ESP32
+Download mode: uart
+Start time: 20260704-11:08
+Connect baud: 115200
+Com:COM21
+connecting...
+set STOP FLG: Trueset state: ESP_DL_STOP
+*************************** START ****************************
+Chip: ESP32
+Download mode: uart
+Start time: 20260704-11:13
+Connect baud: 115200
+Com:COM21
+connecting...
+MAC: [104, 9, 71, 46, 227, 216]
+crc_cal: 34
+crc_read: 34
+crc_test: 0
+ESP32 MAC CRC OK
+manufacturer_id: 0x46
+device_id: 0x4018
+fs:0x200200
+address/file: 4096 D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\bootloader.bin
+address/file: 32768 D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\partition-table.bin
+address/file: 53248 D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\ota_data_initial.bin
+address/file: 65536 D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\bochuang-program.bin
+address/file: 6356992 D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\KSPSBED00002817.bin
+Wrote 28544 bytes (17187 compressed) at 0x00001000 in 0.6 seconds (effective 391.4 kbit/s)...
+Wrote 3072 bytes (156 compressed) at 0x00008000 in 0.0 seconds (effective 815.4 kbit/s)...
+Wrote 8192 bytes (31 compressed) at 0x0000d000 in 0.0 seconds (effective 2697.6 kbit/s)...
+Wrote 1514192 bytes (908019 compressed) at 0x00010000 in 20.9 seconds (effective 580.3 kbit/s)...
+Wrote 92 bytes (73 compressed) at 0x00610000 in 0.0 seconds (effective 42.8 kbit/s)...
+File: D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\bootloader.bin
+File  md5: fc1ccb1bd722434751b3fac8f5ee8749
+Flash md5: fc1ccb1bd722434751b3fac8f5ee8749
+Hash of data verified.
+File: D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\partition-table.bin
+File  md5: 45ee006213d05cf56d47b4d52e1a1a37
+Flash md5: 45ee006213d05cf56d47b4d52e1a1a37
+Hash of data verified.
+File: D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\ota_data_initial.bin
+File  md5: 84d04c9d6cc8ef35bf825d51a5277699
+Flash md5: 84d04c9d6cc8ef35bf825d51a5277699
+Hash of data verified.
+File: D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\bochuang-program.bin
+File  md5: 7531f93187ed0caa5ea29e06961333e3
+Flash md5: 7531f93187ed0caa5ea29e06961333e3
+Hash of data verified.
+File: D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\KSPSBED00002817.bin
+File  md5: 3d0e9478e88ace82ffb84287f7ca19eb
+Flash md5: 3d0e9478e88ace82ffb84287f7ca19eb
+Hash of data verified.
+
+Leaving...
+com closed
+Total use time: 26 s
+Download result: PASS
+*************************** END ****************************
+

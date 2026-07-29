@@ -261,7 +261,20 @@ void config_store_to_flash(void)
 		len = sizeof(out_value);
 		ESP_ERROR_CHECK(nvs_get_u8(nvs_config_handler, "otaFlag", &device_info->ota.flag));
 		ESP_ERROR_CHECK(nvs_get_str(nvs_config_handler, "version", out_value, &len));
-		memcpy(device_info->ota.running_version, out_value, len);
+		/* 新产品线版本前缀 SL_ESP_；NVS 若仍是 BC_ESP_* 则覆盖为 INIT_VERSION */
+		if (strncmp(out_value, "SL_ESP_", 7) == 0) {
+			memset(device_info->ota.running_version, 0, sizeof(device_info->ota.running_version));
+			memcpy(device_info->ota.running_version, out_value,
+			       len < sizeof(device_info->ota.running_version) ? len : sizeof(device_info->ota.running_version) - 1U);
+		} else {
+			ESP_LOGW(TAG, "nvs version \"%s\" 非 SL_ESP_，改用 INIT_VERSION=%s",
+			         out_value, INIT_VERSION);
+			memset(device_info->ota.running_version, 0, sizeof(device_info->ota.running_version));
+			strncpy(device_info->ota.running_version, INIT_VERSION,
+			        sizeof(device_info->ota.running_version) - 1U);
+			ESP_ERROR_CHECK(nvs_set_str(nvs_config_handler, "version", device_info->ota.running_version));
+			ESP_ERROR_CHECK(nvs_commit(nvs_config_handler));
+		}
 		len = sizeof(out_value);
 
 		/* 左右各一份最新报告进度；device_info->report 镜像左路供 deviceCli */

@@ -16,5 +16,10 @@ wifi_config_t wifi_config;
 
 void initialize_wifi(void);
 
+/**
+ * SNTP 时间同步成功后调用：用正确的 UTC 毫秒时间重新计算涂鸦 MQTT 签名并创建/启动客户端。
+ * 若在 WiFi 初始化阶段签名，gettimeofday 未校正会导致 timestamp 错误、云端主动断连。
+ */
+void use_wifi_mqtt_init_and_start_after_time_sync(void);
 
 #endif 

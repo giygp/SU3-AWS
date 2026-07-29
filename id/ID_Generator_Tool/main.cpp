@@ -20,8 +20,8 @@ static qs_settings_aliyun_t m_aliyun;
 //多个
 #if 1
 static char product_host[] = "%s.iot-060a3upv.mqtt.iothub.aliyuncs.com";  //w801： iot-as-mqtt.cn-shanghai.aliyuncs.com
-static char csv_file_name[] = "./20260623.csv";
-static char aliyun_bin_name[] = "./bin_20260623/%s.bin";
+static char csv_file_name[] = "./ziyong.csv";
+static char aliyun_bin_name[] = "./ziyong/%s.bin";
 static char bin_file_name[60];
 static char product_key[20];
 static char device_name[20];

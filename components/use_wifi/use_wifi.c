@@ -23,10 +23,12 @@
 #include "lwip/sockets.h"
 #include "lwip/sys.h"
 #include "lwip/dns.h"
+#include "lwip/ip_addr.h"
 #include <lwip/netdb.h>
 #include "aiot_mqtt_sign.h"
 #include "cJSON.h"
 #include "mqtt_client.h"
+#include <errno.h>
 #include "freertos/semphr.h"
 #include "esp_flash.h"
 #include "esp_flash_spi_init.h"
@@ -45,6 +47,14 @@
 #define MAXIMUM_RETRY_WIFI (5)
 #define MAXIMUM_RETRY_SNTP (60)
 
+/* 涂鸦（iot.smartbed.ink）MQTT：TLS + 动态 timestamp 签名，对齐 ESP_BC */
+#define TUYA_MQTT_BROKER_PORT 1883
+/**
+ * aiotMqttSign 最后一参：与 clientId 里 securemode 一致。
+ * 1 = securemode=2（TLS）；0 = securemode=3（明文 TCP）。
+ */
+#define TUYA_MQTT_SIGN_SECUREMODE_TLS_STYLE 1
+
 // topic
 
 char ota_infor_publish_topic[64] = {0};     // 缩减为64
@@ -56,8 +66,35 @@ char user_cli_data_subscribe_topic[64] = {0};
 char user_cli_data_publish_topic[64] = {0};
 char ota_upgrade_subscribe_topic[64] = {0};
 char mqtt_connect_aliyun_url[64] = {0};
+/** mqtts://host:端口，生命周期需覆盖 MQTT 客户端存续期 */
+static char s_mqtt_uri[128];
 char mc_cli_data_subscribe_topic[64] = {0};
 char mc_cli_data_publish_topic[64] = {0};
+static const char s_mqtt_ca_cert[] =
+"-----BEGIN CERTIFICATE-----\n"
+"MIIEBTCCAu2gAwIBAgIUOiMDlRFu6/Snmcl3ajKz0WcXM5swDQYJKoZIhvcNAQEL\n"
+"BQAwgZAxCzAJBgNVBAYTAkNOMREwDwYDVQQIDAhaaGVKaWFuZzEQMA4GA1UEBwwH\n"
+"SmlhWGluZzEPMA0GA1UECgwGS2Vlc29uMQwwCgYDVQQLDANEJlIxGTAXBgNVBAMM\n"
+"EGlvdC5zbWFydGJlZC5pbmsxIjAgBgkqhkiG9w0BCQEWE3NxbC5zb25nQGtlZXNv\n"
+"bi5jb20wIBcNMjYwNjA4MDAyMzE3WhgPMjEyNjA1MTUwMDIzMTdaMIGQMQswCQYD\n"
+"VQQGEwJDTjERMA8GA1UECAwIWmhlSmlhbmcxEDAOBgNVBAcMB0ppYVhpbmcxDzAN\n"
+"BgNVBAoMBktlZXNvbjEMMAoGA1UECwwDRCZSMRkwFwYDVQQDDBBpb3Quc21hcnRi\n"
+"ZWQuaW5rMSIwIAYJKoZIhvcNAQkBFhNzcWwuc29uZ0BrZWVzb24uY29tMIIBIjAN\n"
+"BgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAicRN0yZQuG+m6DgivDWDa3O02xJf\n"
+"oqE+ho0V1O8lrWahS42lrRKbLWQRyKaXfNseNQklJg+J2AueDt4oAfzAhQg3Pn1/\n"
+"SufwwtujTLPpfXNqgBbm6tF9DlVL+ML66FdOFXcUCT3uRD599pPIP99u4dS02OsV\n"
+"7O5drbn6GQTFWm26gjwLN12fOf0BgsjnQ1ugQ44YJR7kzIRny47kl3zzoLj2WMm2\n"
+"0Mf3R0OuKXZ/WuUcxZSMwNMLMeToFIjoKFbB24w5vBv2YkduB/F6w2QzPFK9zAf4\n"
+"wf4zn+UDbIHkD4WVbLwUG/d4xEECjpAYCP+qCB1DL8tbiZxjDF9svGr7dQIDAQAB\n"
+"o1MwUTAdBgNVHQ4EFgQU8wf5AZDvjUrJIHsK9eZTJpu79bIwHwYDVR0jBBgwFoAU\n"
+"8wf5AZDvjUrJIHsK9eZTJpu79bIwDwYDVR0TAQH/BAUwAwEB/zANBgkqhkiG9w0B\n"
+"AQsFAAOCAQEAh33JCkUzAyiUMLhOKWQmhkso5T/n1WsShTL5saNI5E2+k5VvOUqU\n"
+"o3s+IWc5Jg7biH05GyvXPk+laAkgP1ImsnTijNznzJRxJqGVOYSNViyfB1VxcdwS\n"
+"0WH/qSk/ZZxPNcS1rlRloLVmtEwoQo/EHN0hndHE3qNnmQanokHSfuRRsTltjObf\n"
+"+kaU/ewFoAaRMe80hfNSqSBylR+euetT31YQ7dZZSf5qecOFEOPHauNOpsHGa7d4\n"
+"Wv+4RO+c5jrfCXFMUdzPqUJpTuLCFWL9wH6xnBr4Aletklik+AJz56cTzB4jWDHa\n"
+"CxXCO4hhMTdGsPU3m5KzWO+bq0mo1Gr+BQ==\n"
+"-----END CERTIFICATE-----\n";
 
 extern char last_saved_ssid[32];
 extern char last_saved_passwd[64];
@@ -65,6 +102,9 @@ extern char last_saved_passwd[64];
 static const char *TAG = "wifi station";
 int s_retry_num = 0;
 static int s_mqtt_retry_num = 0;
+static uint8_t s_sntp_started = 0;
+static uint8_t s_mqtt_started_after_sntp = 0;
+static int s_mqtt_sub_cli_msg_id = -1;
 static EventGroupHandle_t s_wifi_event_group;
 extern device_info_t *device_info;
 char *mqtt_json_send;
@@ -85,11 +125,101 @@ wifi_config_t wifi_config = {
     },
 };
 
+/* 获 IP 后立即 SNTP（IP 直连，避免 DNS 延迟）；同步成功回调里启动 MQTT */
+static void on_sntp_synced(struct timeval *tv)
+{
+    (void)tv;
+    if (device_info != NULL) {
+        device_info->utc.flag = true;
+    }
+    if (!s_mqtt_started_after_sntp) {
+        s_mqtt_started_after_sntp = 1;
+        use_wifi_mqtt_init_and_start_after_time_sync();
+    }
+    ESP_LOGI(TAG, "SNTP sync ok, MQTT init triggered");
+}
+
+static void start_sntp_once(void)
+{
+    if (s_sntp_started) {
+        return;
+    }
+    s_sntp_started = 1;
+
+    sntp_set_time_sync_notification_cb(on_sntp_synced);
+    sntp_setoperatingmode(SNTP_OPMODE_POLL);
+    sntp_set_sync_mode(SNTP_SYNC_MODE_IMMED);
+
+    ip_addr_t ntp_addr;
+    ipaddr_aton("203.107.6.88", &ntp_addr); /* ntp.aliyun.com */
+    sntp_setserver(0, &ntp_addr);
+
+    ip_addr_t ntp_addr2;
+    ipaddr_aton("114.118.7.163", &ntp_addr2); /* ntp1.aliyun.com 备用 */
+    sntp_setserver(1, &ntp_addr2);
+
+    setenv("TZ", "CST-8", 1);
+    tzset();
+    sntp_init();
+    ESP_LOGI(TAG, "SNTP started on GOT_IP (IP direct)");
+}
+
+/* 解析 OTA upgrade 下行并启动 HTTPS 下载（兼容 data / params 字段） */
+static void mqtt_handle_ota_upgrade_payload(const char *payload)
+{
+    cJSON *root = NULL;
+    cJSON *data_obj = NULL;
+    cJSON *ver_item = NULL;
+    cJSON *url_item = NULL;
+
+    if (payload == NULL || payload[0] == '\0') {
+        ESP_LOGE(TAG, "OTA upgrade payload empty");
+        return;
+    }
+
+    root = cJSON_Parse(payload);
+    if (root == NULL) {
+        ESP_LOGE(TAG, "OTA upgrade JSON parse fail");
+        return;
+    }
+
+    data_obj = cJSON_GetObjectItem(root, "data");
+    if (data_obj == NULL) {
+        data_obj = cJSON_GetObjectItem(root, "params");
+    }
+    if (data_obj == NULL) {
+        ESP_LOGE(TAG, "OTA upgrade missing data/params");
+        cJSON_Delete(root);
+        return;
+    }
+
+    ver_item = cJSON_GetObjectItem(data_obj, "version");
+    url_item = cJSON_GetObjectItem(data_obj, "url");
+    if (ver_item == NULL || ver_item->valuestring == NULL ||
+        url_item == NULL || url_item->valuestring == NULL) {
+        ESP_LOGE(TAG, "OTA upgrade missing version/url");
+        cJSON_Delete(root);
+        return;
+    }
+
+    memset(device_info->ota.upgrade_version, 0, sizeof(device_info->ota.upgrade_version));
+    strncpy(device_info->ota.upgrade_version, ver_item->valuestring,
+            sizeof(device_info->ota.upgrade_version) - 1);
+    memset(device_info->ota.url, 0, sizeof(device_info->ota.url));
+    strncpy(device_info->ota.url, url_item->valuestring, sizeof(device_info->ota.url) - 1);
+
+    ESP_LOGI(TAG, "OTA upgrade push: %s -> %s",
+             device_info->ota.running_version, device_info->ota.upgrade_version);
+    cJSON_Delete(root);
+    ota_start();
+}
+
 //wifi操作函数
 static void event_handler(void *arg, esp_event_base_t event_base,
                           int32_t event_id, void *event_data)
 {
     static uint32_t last_disconnect_time = 0;
+    (void)last_disconnect_time;
     //开始连接wifi
     if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_START)
     {
@@ -125,7 +255,16 @@ static void event_handler(void *arg, esp_event_base_t event_base,
         s_retry_num = 0;
         ESP_LOGI(TAG, "connected");
         set_wifi_status(WIFI_STATUS_CONNECTED);
-        esp_mqtt_client_start(client);   //开始连接mqtt
+        start_sntp_once();
+        /* 首次 MQTT 在 SNTP 回调 on_sntp_synced 中创建并 start；
+         * WiFi 重连后 client 已存在，此处恢复连接。
+         * OTA 下载期间 MQTT 已 stop，禁止此处 start，避免双 TLS。 */
+        if (client != NULL && get_ota_now_flag() == 0) {
+            esp_err_t merr = esp_mqtt_client_start(client);
+            if (merr != ESP_OK && merr != ESP_ERR_INVALID_STATE) {
+                ESP_LOGW(TAG, "esp_mqtt_client_start on GOT_IP: %s", esp_err_to_name(merr));
+            }
+        }
         if (get_one_key_config_wifi_status() ||
             strcmp((char *)last_saved_ssid, (char *)device_info->wifi.one_key_config.ssid) != 0 ||
             strcmp((char *)last_saved_passwd, (char *)device_info->wifi.one_key_config.passwd) != 0)
@@ -161,7 +300,6 @@ static void mqtt_event_handler(void *handler_args, esp_event_base_t base, int32_
     mmqtt_msg_t *msg = NULL;
     cJSON *firstItem;
     cJSON *secondItem;
-    cJSON *thirdItem;
     char temp[2048] = {0};
     uint8_t cmd_bin[64] = {0}; // 存放MQTT_key数据
     // 通过事件ID来分别处理对应的事件
@@ -204,32 +342,15 @@ static void mqtt_event_handler(void *handler_args, esp_event_base_t base, int32_
         printf("%s\n", mc_cli_data_subscribe_topic);
         printf("%s\n", mc_cli_data_publish_topic);
         printf("%s\n", user_cli_data_subscribe_topic);
-        esp_mqtt_client_subscribe(client, user_cli_data_subscribe_topic, 0);   //订阅服务 
+        s_mqtt_sub_cli_msg_id = esp_mqtt_client_subscribe(client, user_cli_data_subscribe_topic, 0);
         esp_mqtt_client_subscribe(client, ota_upgrade_subscribe_topic, 0);
-        //esp_mqtt_client_subscribe(client, mc_cli_data_subscribe_topic, 0);
-        if (device_info->ota.flag)    //ota版本上传服务
+        /* 每次 MQTT 连上都上报 OTA 版本，便于涂鸦云端匹配升级任务 */
+        sprintf(temp,"{\"id\": \"1\",\"params\": {\"version\": \"%s\",\"module\":\"default\"}}",
+                device_info->ota.running_version);
+        printf("%s\n",temp);
+        esp_mqtt_client_publish(client, ota_infor_publish_topic, (char *)temp, strlen((char *)temp), 1, 0);
+        if (device_info->ota.flag)
         {
-            // firstItem = cJSON_CreateObject();
-            // cJSON_AddNumberToObject(firstItem,"id",1);
-
-            // secondItem = cJSON_CreateObject();
-            // cJSON_AddStringToObject(secondItem, "version", device_info->ota.running_version);
-            // cJSON_AddItemToObject(firstItem, "params", secondItem);
-            // char *p_str = cJSON_Print(firstItem);
-            // if(p_str)
-            // {
-            //     printf("%s\n",cJSON_Print(firstItem)); //打印创建的字符串
-            //     esp_mqtt_client_publish(client, ota_infor_publish_topic, (char *)p_str, strlen((char *)p_str), 1, 0);
-            //     free(p_str);                      //一定要记得释放,不然会导致内存泄漏
-            //     p_str = NULL;
-            // }
-            // cJSON_Delete(firstItem);  
-
-            sprintf(temp,"{\"id\": \"1\",\"params\": {\"version\": \"%s\",\"module\":\"default\"}}",device_info->ota.running_version);
-            printf("%s\n",temp);
-            esp_mqtt_client_publish(client, ota_infor_publish_topic, (char *)temp, strlen((char *)temp), 1, 0); 
-
-//一个版本只上传一次版本信息
             nvs_handle ota_handlel;
             ESP_ERROR_CHECK(nvs_open("config_cfg", NVS_READWRITE, &ota_handlel));
             ESP_ERROR_CHECK(nvs_set_u8(ota_handlel, "otaFlag", 0));
@@ -273,8 +394,9 @@ static void mqtt_event_handler(void *handler_args, esp_event_base_t base, int32_
         break;
     // 主题订阅成功
     case MQTT_EVENT_SUBSCRIBED:
-        // printf("mqtt subscribe ok. msg_id = %d \n",event->msg_id);
-        //printf("MQTT_client3");
+        if (event->msg_id == s_mqtt_sub_cli_msg_id) {
+            ESP_LOGI(TAG, "cli subscribe ok msg_id=%d", event->msg_id);
+        }
         break;
     // 取消订阅
     case MQTT_EVENT_UNSUBSCRIBED:
@@ -290,28 +412,45 @@ static void mqtt_event_handler(void *handler_args, esp_event_base_t base, int32_
     case MQTT_EVENT_DATA:
     /*
 {
-"id":"KSPSBED00000142",
+"id":"KSSLBED03000001",
 "ts":123456789,
 "type":"sensorCli",
 "cmd":"version"  //"report 29 2023-12-16 01:52:30 014"   "get param"
 }
 {
-"id":"KSPSBED00000142",
+"id":"KSSLBED00000001",
 "ts":123456789,
 "type":"deviceCli",
 "cmd":"currentReport"
 }
     */
         printf("mqtt received topic: %.*s \n", event->topic_len, event->topic);
-        // printf("topic data: %.*s\r\n", event->data_len, event->data);
+        if (event->topic_len <= 0 || event->data_len <= 0) {
+            break;
+        }
+        if ((size_t)event->topic_len >= sizeof(((mmqtt_msg_t *)0)->topic) ||
+            (size_t)event->data_len >= sizeof(((mmqtt_msg_t *)0)->data)) {
+            ESP_LOGW(TAG, "MQTT msg too large, topic_len=%d data_len=%d",
+                     event->topic_len, event->data_len);
+            break;
+        }
+        if (event->total_data_len > 0 && event->data_len != event->total_data_len) {
+            ESP_LOGW(TAG, "MQTT fragmented msg ignored, total=%d chunk=%d",
+                     event->total_data_len, event->data_len);
+            break;
+        }
         msg = (mmqtt_msg_t *)malloc(sizeof(mmqtt_msg_t));
         if (msg == NULL) {
             printf("Error: Memory allocation failed for mmqtt_msg_t!\n");
             break;
         }
         memset(msg, 0, sizeof(mmqtt_msg_t));
-        memcpy(msg->topic, event->topic, event->topic_len);
-        memcpy(msg->data, event->data, event->data_len);
+        memcpy(msg->topic, event->topic, (size_t)event->topic_len);
+        memcpy(msg->data, event->data, (size_t)event->data_len);
+        msg->topic[event->topic_len] = '\0';
+        msg->data[event->data_len] = '\0';
+        msg->topic_len = (uint32_t)event->topic_len;
+        msg->data_len = (uint32_t)event->data_len;
 
         if (msg&&strstr(msg->topic, user_cli_data_subscribe_topic))
         {
@@ -479,35 +618,14 @@ static void mqtt_event_handler(void *handler_args, esp_event_base_t base, int32_
         }
         else if (msg&&strstr(msg->topic, ota_upgrade_subscribe_topic))
         {
-            firstItem = cJSON_Parse((char *)msg->data);
-            printf("%s\n", msg->data);
-            if (firstItem)
-            {
-                secondItem = cJSON_GetObjectItem(firstItem, "data");
-
-                thirdItem = cJSON_GetObjectItem(secondItem, "version");
-                memset(device_info->ota.upgrade_version,0,32);
-                memcpy(device_info->ota.upgrade_version, thirdItem->valuestring, strlen(thirdItem->valuestring));
-                printf("upgrade_version = %s\n",device_info->ota.upgrade_version);
-                thirdItem = cJSON_GetObjectItem(secondItem, "url");
-                memset(device_info->ota.url,0,100);
-                memcpy(device_info->ota.url, thirdItem->valuestring, strlen(thirdItem->valuestring));
-                // sprintf(device_info->ota.url,"http%s",&thirdItem->valuestring[5]);
-                printf("url = %s\n",device_info->ota.url);
-                printf("start ota \n");
-                ota_start();
-                cJSON_Delete(firstItem);
-            }
-            else{
-                printf("cJSON_Parse wrong\n");
-            }
+            mqtt_handle_ota_upgrade_payload((char *)msg->data);
         }
         free(msg);
         printf("MQTT_EVENT_DATA \n");
         break;
     // 客户端遇到错误
     case MQTT_EVENT_ERROR:
-        printf("MQTT_EVENT_ERROR \n");
+        ESP_LOGE(TAG, "MQTT_EVENT_ERROR");
         break;
     default:
         printf("Other event id:%d \n", event->event_id);
@@ -520,31 +638,58 @@ void aliyun_mqtt_server(void)
     char clientid[150] = {0};
     char username[64] = {0};
     char password[65] = {0};
-    //个人阿里云
-    // sprintf(mqtt_connect_aliyun_url, "%s.iot-as-mqtt.cn-shanghai.aliyuncs.com", device_info->aliyun.product_key);    //product_host
-    //企业阿里云
-    strcpy(mqtt_connect_aliyun_url, "iot-060a3upv.mqtt.iothub.aliyuncs.com");    //iot-060a3upv.mqtt.iothub.aliyuncs.com   192.168.142.63
 
-    // aiotMqttSign(device_info.product_key, device_info.product_id, device_info.device_secret, clientid, username, password);
-    aiotMqttSign(device_info->aliyun.product_key, device_info->aliyun.device_id, device_info->aliyun.device_secret, clientid, username, password);
+    strncpy(mqtt_connect_aliyun_url, "iot.smartbed.ink", sizeof(mqtt_connect_aliyun_url) - 1);
+    mqtt_connect_aliyun_url[sizeof(mqtt_connect_aliyun_url) - 1] = '\0';
+    aiotMqttSign(device_info->aliyun.product_key, device_info->aliyun.device_id,
+                 device_info->aliyun.device_secret, clientid, username, password,
+                 TUYA_MQTT_SIGN_SECUREMODE_TLS_STYLE);
 
-    // 1、定义一个MQTT客户端配置结构体，输入MQTT的url
+    ESP_LOGI(TAG, "mqtt broker host=%s", mqtt_connect_aliyun_url);
+    ESP_LOGI(TAG, "mqtt clientid=%s", clientid);
+    ESP_LOGI(TAG, "mqtt username=%s", username);
+
+    if (snprintf(s_mqtt_uri, sizeof(s_mqtt_uri), "mqtts://%s:%d",
+                 mqtt_connect_aliyun_url, TUYA_MQTT_BROKER_PORT)
+        >= (int)sizeof(s_mqtt_uri)) {
+        ESP_LOGE(TAG, "mqtt uri 过长");
+    }
+    ESP_LOGI(TAG, "mqtt uri=%s (TLS，使用 iot.smartbed.ink CA)", s_mqtt_uri);
+
     esp_mqtt_client_config_t mqtt_cfg = {
-        .host = mqtt_connect_aliyun_url,
-        .port = 1883,
+        .uri = s_mqtt_uri,
         .client_id = clientid,
         .username = username,
         .password = password,
-        .buffer_size = 1024,  //修改
+        .cert_pem = s_mqtt_ca_cert,
+        .buffer_size = 1024,
         .task_stack = 1024 * 20,
-        .message_retransmit_timeout = 25000
-        };
+        .message_retransmit_timeout = 25000,
+        /* 涂鸦文档建议 keepalive 取 300s 以上（范围 30–1200） */
+        .keepalive = 300,
+    };
 
-    // 2、通过esp_mqtt_client_init获取一个MQTT客户端结构体指针，参数是MQTT客户端配置结构体
     client = esp_mqtt_client_init(&mqtt_cfg);
-
-    // 3、注册MQTT事件
     esp_mqtt_client_register_event(client, ESP_EVENT_ANY_ID, mqtt_event_handler, client);
+}
+
+void use_wifi_mqtt_init_and_start_after_time_sync(void)
+{
+    /* 涂鸦 aiotMqttSign 使用 gettimeofday 毫秒时间戳；SNTP 前签名会导致连接后很快被踢 */
+    if (client != NULL) {
+        esp_mqtt_client_stop(client);
+        esp_mqtt_client_destroy(client);
+        client = NULL;
+    }
+    aliyun_mqtt_server();
+    if (client == NULL) {
+        ESP_LOGE(TAG, "MQTT client init failed");
+        return;
+    }
+    esp_err_t err = esp_mqtt_client_start(client);
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "esp_mqtt_client_start: %s", esp_err_to_name(err));
+    }
 }
 
 void initialize_wifi(void)
@@ -579,6 +724,12 @@ void initialize_wifi(void)
     ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
     ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &wifi_config));
     ESP_ERROR_CHECK(esp_wifi_start());
-    ESP_LOGI(TAG, "wifi_init_sta finished.");
-    aliyun_mqtt_server();
+#if defined(CONFIG_BT_ENABLED) && CONFIG_BT_ENABLED
+    ESP_ERROR_CHECK(esp_wifi_set_ps(WIFI_PS_MIN_MODEM));
+    ESP_LOGI(TAG, "wifi ps=WIFI_PS_MIN_MODEM（BT 已启用，不可用 PS_NONE）");
+#else
+    ESP_ERROR_CHECK(esp_wifi_set_ps(WIFI_PS_NONE));
+    ESP_LOGI(TAG, "wifi ps=WIFI_PS_NONE（未启用 BT）");
+#endif
+    ESP_LOGI(TAG, "wifi_init_sta finished.（获 IP 后 SNTP→MQTT，见 start_sntp_once/on_sntp_synced）");
 }

@@ -3,7 +3,9 @@
  */
 #include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
+#include <sys/time.h>
 #include "aiot_mqtt_sign.h"
 
 #define PRODUCTKEY_MAXLEN           (20)
@@ -15,9 +17,8 @@
 #define USERNAME_MAXLEN             (64)
 #define PASSWORD_MAXLEN             (65)
 
-#define TIMESTAMP_VALUE             "2524608000000"
-#define MQTT_CLINETID_KV            "|securemode=2,signmethod=hmacsha256,timestamp=2524608000000|"
-	
+#define TIMESTAMP_FALLBACK          "2524608000000"
+
 static void utils_hmac_sha256(const uint8_t *msg, uint32_t msg_len, const uint8_t *key, uint32_t key_len, uint8_t output[32]);
 
 static void _hex2str(uint8_t *input, uint16_t input_len, char *output)
@@ -71,34 +72,42 @@ int32_t core_auth_mqtt_username(char *dest, char *product_key, char *device_name
 	return 0;
 }
 
-
-int32_t core_auth_mqtt_password(char *dest, char *product_key, char *device_name,
-                                char *device_secret)
+static int32_t core_auth_mqtt_password_ts(char *dest, const char *product_key, const char *device_name,
+                                          const char *device_secret, const char *timestamp_ms)
 {
-	int32_t res = 0;
-    char plain_text[100] = {0};
+    int32_t res = 0;
+    char plain_text[160] = {0};
     uint8_t sign[32] = {0};
+    char *src[] = {
+        (char *)product_key,
+        (char *)device_name,
+        (char *)device_name,
+        (char *)product_key,
+        (char *)timestamp_ms
+    };
 
-    char *src[] = { product_key, device_name, device_name, product_key, TIMESTAMP_VALUE };
     res = core_sprintf(plain_text, "clientId%s.%sdeviceName%sproductKey%stimestamp%s", src,
                        sizeof(src) / sizeof(char *));
+    if (res != 0) {
+        return res;
+    }
 
-    utils_hmac_sha256((const uint8_t *)plain_text, (uint32_t)strlen(plain_text), (const uint8_t *)device_secret,
-                     (uint32_t)strlen(device_secret), sign);
+    utils_hmac_sha256((const uint8_t *)plain_text, (uint32_t)strlen(plain_text),
+                     (const uint8_t *)device_secret, (uint32_t)strlen(device_secret), sign);
     _hex2str(sign, 32, dest);
-
     return 0;
 }
 
+
 int aiotMqttSign(const char *productKey, const char *deviceName, const char *deviceSecret,
-                     char clientId[150], char username[64], char password[65])
+                     char clientId[150], char username[64], char password[65],
+                     int use_tls_sign)
 {
     char deviceId[PRODUCTKEY_MAXLEN + DEVICENAME_MAXLEN + 2] = {0};
+    char ts_ms[24];
+    char kv[128];
+    size_t tot_len;
 
-    char macSrc[SIGN_SOURCE_MAXLEN] = {0};
-    uint8_t macRes[32] = {0};
-
-    /* check parameters */
     if (productKey == NULL || deviceName == NULL || deviceSecret == NULL ||
         clientId == NULL || username == NULL || password == NULL) {
         return -1;
@@ -108,22 +117,34 @@ int aiotMqttSign(const char *productKey, const char *deviceName, const char *dev
         return -1;
     }
 
-    /* setup deviceId */
- 
 	memcpy(deviceId, productKey, strlen(productKey));
     memcpy(deviceId + strlen(deviceId), ".", strlen("."));
     memcpy(deviceId + strlen(deviceId), deviceName, strlen(deviceName));
-	
-    /* setup clientid */
+
+    {
+        struct timeval tv = {0};
+        if (gettimeofday(&tv, NULL) == 0) {
+            unsigned long long ms = (unsigned long long)tv.tv_sec * 1000ULL
+                + (unsigned long long)tv.tv_usec / 1000ULL;
+            snprintf(ts_ms, sizeof(ts_ms), "%llu", ms);
+        } else {
+            strncpy(ts_ms, TIMESTAMP_FALLBACK, sizeof(ts_ms) - 1);
+            ts_ms[sizeof(ts_ms) - 1] = '\0';
+        }
+    }
+
+    snprintf(kv, sizeof(kv), "|securemode=%d,signmethod=hmacsha256,timestamp=%s|",
+             use_tls_sign ? 2 : 3, ts_ms);
+
+    tot_len = strlen(deviceId) + strlen(kv);
+    if (tot_len >= 150) {
+        return -1;
+    }
     memcpy(clientId, deviceId, strlen(deviceId));
-    memcpy(clientId + strlen(deviceId), MQTT_CLINETID_KV, strlen(MQTT_CLINETID_KV));
-    memset(clientId + strlen(deviceId) + strlen(MQTT_CLINETID_KV), 0, 1);
-	
-	/* setup username */
-	core_auth_mqtt_username(username,productKey,deviceName);
-	
-	/* setup password */
-	core_auth_mqtt_password(password,productKey,deviceName,deviceSecret);
+    memcpy(clientId + strlen(deviceId), kv, strlen(kv) + 1);
+
+	core_auth_mqtt_username(username, productKey, deviceName);
+	core_auth_mqtt_password_ts(password, productKey, deviceName, deviceSecret, ts_ms);
     return 0;
 }
 

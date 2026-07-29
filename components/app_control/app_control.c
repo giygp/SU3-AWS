@@ -541,7 +541,8 @@ void data_display_task(void *pv)
     vTaskDelete(NULL);
 }
 
-/* 基座 id → 侧别 id（第 8～9 字符改为 03/06） */
+/* 基座 id → 侧别 id（第 8～9 字符改为 03/06）
+ * 例：KSSLBED00000001 → 左 KSSLBED03000001 / 右 KSSLBED06000001 */
 static void su3_make_side_id(char *out, size_t out_len, int side)
 {
     size_t n;
@@ -2013,18 +2014,17 @@ static void su3_publish_5s(int side)  /* 5s 数据上报云端*/
     }
     /* 不足 5 帧的缺位保持 0（结构体初始/清零后即为 0） */
     su3_make_side_id(id, sizeof(id), side);
+    /* ts=板端 UTC；sensor_ts=窗口内最后 1 条 1s 传感器时间（标量，非数组） */
     n = snprintf(json, sizeof(json),
                  "{\"id\":\"%s\",\"ts\":%d,\"type\":1,"
-                 "\"data\":{\"sensor_ts\":[%d,%d,%d,%d,%d],"
+                 "\"data\":{\"sensor_ts\":%d,"
                  "\"heart\":[%d,%d,%d,%d,%d],"
                  "\"breath\":[%d,%d,%d,%d,%d],"
                  "\"status\":[%d,%d,%d,%d,%d],"
                  "\"sdata\":[%d,%d,%d,%d,%d],"
                  "\"pdata\":[%d,%d,%d,%d,%d],"
                  "\"sign\":[%d,%d,%d,%d,%d]}}",
-                 id, device_info->utc.time_stamp,
-                 a->sensor_ts[0], a->sensor_ts[1], a->sensor_ts[2],
-                 a->sensor_ts[3], a->sensor_ts[4],
+                 id, device_info->utc.time_stamp, a->sensor_ts[4],
                  a->heart[0], a->heart[1], a->heart[2], a->heart[3], a->heart[4],
                  a->breath[0], a->breath[1], a->breath[2], a->breath[3], a->breath[4],
                  a->status[0], a->status[1], a->status[2], a->status[3], a->status[4],

@@ -8,7 +8,7 @@
 | CMake 工程名 | `bochuang-program` |
 | 芯片 | ESP32 |
 | 框架 | ESP-IDF v4.4.x（当前联调：v4.4.8） |
-| 版本宏 | `BC_ESP_2026_2_3_4`（沿用，后续随 SU3 发布再改） |
+| 版本宏 | `SL_ESP_2026_1_0_0`（涂鸦新产品 KSSLBED） |
 | 基线标签 | `su3-bringup-20260716` |
 
 架构说明见 [`docs/SU2_通信架构.md`](docs/SU2_通信架构.md)（文档名沿用 SU2 协议族，实现目录为 `su3`）。

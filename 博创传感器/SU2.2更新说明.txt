@@ -2,3 +2,21 @@
                基于SU2_2.0.0_Board_2.0_APP版本.
                增加开始时候的hello；
 	       修改内部自动启动写入flash后没有清除离床分钟累加值的bug；
+
+20260720  SU2_2.0.2_Board_2.0_APP
+               基于SU2_2.0.1_Board_2.0_APP版本。
+	       修改更新固件时候，停止hello发出并屏蔽硬件错误。
+               增加指令（QS_CLI_COMMAND_TOPIC_ID）的command：
+		“Set Single Mode”,返回“ok”，设置为单人模式，双侧输出同样数据；
+		“Set Dual Mode”,返回“ok”，设置为双人模式，两侧单独输出数据；	
+		“Set Without Press Judge”,返回“ok”，设置为无气压检测模式，入床不再依赖气压；
+		“Set With Press Judge”,返回“ok”，设置为有气压检测模式，入床依赖气压；
+		"Get Sleep Mode" 返回"Single Mode"或者"Dual Mode"，表示单人或者双人输出；
+		"Get Press Mode" 返回"Without Press Mode"或者"With Press Mode"，表示是否使用压力；
+		同步增加Debug指令 "TAOSF1"、"TAOSF2"	、"TAOSG1"	、"TAOSG2"	依次等同上面前4个指令。
+                同步增加Debug指令"TAOSI","TAOSJ"两个读取参数指令。
+               注意！
+	       	1. 以上指令均为全局指令，无论对哪个传感器端口写入都会全局生效;
+               	2. 由于参数变更，刷入此版本后会重置所有参数；
+		3. 设置为单人模式时，会强制重置两个传感器的工作参数以保持一致，离入床参数需要等待自动或者手动校准；
+		4. 最好筛选以保证两个传感器的灵敏度一致性。

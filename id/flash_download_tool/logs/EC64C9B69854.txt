@@ -1,0 +1,96 @@
+*************************** START ****************************
+Chip: ESP32
+Download mode: uart
+Start time: 20260525-10:04
+Connect baud: 115200
+Com:COM19
+connecting...
+MAC: [236, 100, 201, 182, 152, 84]
+crc_cal: 146
+crc_read: 146
+crc_test: 0
+ESP32 MAC CRC OK
+manufacturer_id: 0x85
+device_id: 0x2018
+fs:0x200
+address/file: 4096 D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\bootloader.bin
+address/file: 32768 D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\partition-table.bin
+address/file: 53248 D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\ota_data_initial.bin
+address/file: 65536 D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\bochuang-program.bin
+address/file: 6356992 D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\KSPSBED00002784.bin
+Wrote 28544 bytes (17187 compressed) at 0x00001000 in 0.9 seconds (effective 245.0 kbit/s)...
+Wrote 3072 bytes (156 compressed) at 0x00008000 in 0.1 seconds (effective 292.0 kbit/s)...
+Wrote 8192 bytes (31 compressed) at 0x0000d000 in 0.1 seconds (effective 483.9 kbit/s)...
+*************************** START ****************************
+Chip: ESP32
+Download mode: uart
+Start time: 20260525-10:04
+Connect baud: 115200
+Com:COM19
+connecting...
+MAC: [236, 100, 201, 182, 152, 84]
+crc_cal: 146
+crc_read: 146
+crc_test: 0
+ESP32 MAC CRC OK
+manufacturer_id: 0x85
+device_id: 0x2018
+*************************** START ****************************
+Chip: ESP32
+Download mode: uart
+Start time: 20260525-10:04
+Connect baud: 115200
+Com:COM19
+connecting...
+MAC: [236, 100, 201, 182, 152, 84]
+crc_cal: 146
+crc_read: 146
+crc_test: 0
+ESP32 MAC CRC OK
+manufacturer_id: 0x85
+device_id: 0x2018
+fs:0x200
+address/file: 4096 D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\bootloader.bin
+address/file: 32768 D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\partition-table.bin
+address/file: 53248 D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\ota_data_initial.bin
+address/file: 65536 D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\bochuang-program.bin
+address/file: 6356992 D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\KSPSBED00002784.bin
+Wrote 28544 bytes (17187 compressed) at 0x00001000 in 0.9 seconds (effective 251.7 kbit/s)...
+Wrote 3072 bytes (156 compressed) at 0x00008000 in 0.1 seconds (effective 306.2 kbit/s)...
+Wrote 8192 bytes (31 compressed) at 0x0000d000 in 0.1 seconds (effective 546.1 kbit/s)...
+Wrote 1514064 bytes (908256 compressed) at 0x00010000 in 21.3 seconds (effective 568.2 kbit/s)...
+Wrote 92 bytes (73 compressed) at 0x00610000 in 0.1 seconds (effective 11.6 kbit/s)...
+File: D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\bootloader.bin
+File  md5: 0c5360bb64a3057e664ed6625a3dccba
+Flash md5: 0c5360bb64a3057e664ed6625a3dccba
+Hash of data verified.
+File: D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\partition-table.bin
+File  md5: 45ee006213d05cf56d47b4d52e1a1a37
+Flash md5: 45ee006213d05cf56d47b4d52e1a1a37
+Hash of data verified.
+File: D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\ota_data_initial.bin
+File  md5: 84d04c9d6cc8ef35bf825d51a5277699
+Flash md5: 84d04c9d6cc8ef35bf825d51a5277699
+Hash of data verified.
+File: D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\bochuang-program.bin
+File  md5: a148017e4b40971ffe60ed3a0de93317
+Flash md5: a148017e4b40971ffe60ed3a0de93317
+Hash of data verified.
+File: D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\KSPSBED00002784.bin
+File  md5: 7210a01862250ce7a3983ad63ecd594e
+Flash md5: 7210a01862250ce7a3983ad63ecd594e
+Hash of data verified.
+
+Leaving...
+com closed
+Total use time: 27 s
+Download result: PASS
+*************************** END ****************************
+
+*************************** START ****************************
+Chip: ESP32
+Download mode: uart
+Start time: 20260525-10:05
+Connect baud: 115200
+Com:COM19
+connecting...

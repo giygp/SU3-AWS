@@ -3,6 +3,6 @@ static char aliyun_bin_name[] = "./aliyun_bin1669/%s.bin";
 创建文件夹：aliyun_bin1669
 
 d:
-cd D:\soft\vscode\git\ESP_BC\id\ID_Generator_Tool
+cd D:\soft\vscode\git\SU3_ESP32\id\ID_Generator_Tool
 g++ main.cpp -o main.exe
 .\main.exe

@@ -1,0 +1,1124 @@
+*************************** START ****************************
+Chip: ESP32C5
+Download mode: usb
+Start time: 20250807-16:56
+Connect baud: 115200
+Com:COM4
+connecting...
+manufacturer_id: 0x20
+device_id: 0x4017
+fs:0x200200
+
+Leaving...
+com closed
+Total use time: 4 s
+Download result: PASS
+*************************** END ****************************
+
+*************************** START ****************************
+Chip: ESP32C5
+Download mode: usb
+Start time: 20250807-16:57
+Connect baud: 115200
+Com:COM4
+connecting...
+manufacturer_id: 0x20
+device_id: 0x4017
+com closed
+Total use time: 4 s
+Download result: PASS
+*************************** END ****************************
+
+*************************** START ****************************
+Chip: ESP32C5
+Download mode: usb
+Start time: 20250807-16:57
+Connect baud: 115200
+Com:COM4
+connecting...
+manufacturer_id: 0x20
+device_id: 0x4017
+fs:0x200200
+address/file: 0 D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\wifi_station.bin
+Wrote 817104 bytes (466692 compressed) at 0x00000000 in 2.2 seconds (effective 2953.1 kbit/s)...
+File: D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\wifi_station.bin
+File  md5: eecb8bcf7ccb5f171279374f84fab4dd
+Flash md5: eecb8bcf7ccb5f171279374f84fab4dd
+Hash of data verified.
+
+Leaving...
+com closed
+Total use time: 5 s
+Download result: PASS
+*************************** END ****************************
+
+*************************** START ****************************
+Chip: ESP32C5
+Download mode: uart
+Start time: 20250807-17:28
+Connect baud: 115200
+Com:COM4
+connecting...
+manufacturer_id: 0x20
+device_id: 0x4017
+fs:0x200200
+address/file: 0 D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\hello_world.bin
+Wrote 153120 bytes (80398 compressed) at 0x00000000 in 0.9 seconds (effective 1372.1 kbit/s)...
+File: D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\hello_world.bin
+File  md5: 11ad9d2fccd42ab1e290e9fc7b701dfe
+Flash md5: 11ad9d2fccd42ab1e290e9fc7b701dfe
+Hash of data verified.
+
+Leaving...
+com closed
+Total use time: 3 s
+Download result: PASS
+*************************** END ****************************
+
+*************************** START ****************************
+Chip: ESP32C5
+Download mode: uart
+Start time: 20250807-18:24
+Connect baud: 115200
+Com:COM4
+connecting...
+manufacturer_id: 0x20
+device_id: 0x4017
+fs:0x200200
+address/file: 0 D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\bochuang-program.bin
+Wrote 1512640 bytes (906896 compressed) at 0x00000000 in 5.3 seconds (effective 2262.9 kbit/s)...
+File: D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\bochuang-program.bin
+File  md5: 98b93fd873c4265270152b8c4b1c2ff3
+Flash md5: 98b93fd873c4265270152b8c4b1c2ff3
+Hash of data verified.
+
+Leaving...
+com closed
+Total use time: 8 s
+Download result: PASS
+*************************** END ****************************
+
+*************************** START ****************************
+Chip: ESP32C5
+Download mode: uart
+Start time: 20250807-18:25
+Connect baud: 115200
+Com:COM4
+connecting...
+manufacturer_id: 0x20
+device_id: 0x4017
+com closed
+Total use time: 4 s
+Download result: PASS
+*************************** END ****************************
+
+*************************** START ****************************
+Chip: ESP32C5
+Download mode: uart
+Start time: 20250808-09:06
+Connect baud: 115200
+Com:COM4
+connecting...
+manufacturer_id: 0x20
+device_id: 0x4017
+fs:0x200200
+address/file: 0 D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\wifi_station.bin
+Wrote 967008 bytes (547953 compressed) at 0x00000000 in 4.0 seconds (effective 1952.0 kbit/s)...
+File: D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\wifi_station.bin
+File  md5: 731c41c02d38b94c3488d0ea56ab4a73
+Flash md5: 731c41c02d38b94c3488d0ea56ab4a73
+Hash of data verified.
+
+Leaving...
+com closed
+Total use time: 7 s
+Download result: PASS
+*************************** END ****************************
+
+*************************** START ****************************
+Chip: ESP32C5
+Download mode: uart
+Start time: 20250808-09:19
+Connect baud: 115200
+Com:COM4
+connecting...
+manufacturer_id: 0x20
+device_id: 0x4017
+fs:0x200200
+address/file: 0 D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\wifi_station.bin
+Wrote 967008 bytes (547953 compressed) at 0x00000000 in 4.0 seconds (effective 1936.5 kbit/s)...
+File: D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\wifi_station.bin
+File  md5: 731c41c02d38b94c3488d0ea56ab4a73
+Flash md5: 731c41c02d38b94c3488d0ea56ab4a73
+Hash of data verified.
+
+Leaving...
+com closed
+Total use time: 7 s
+Download result: PASS
+*************************** END ****************************
+
+*************************** START ****************************
+Chip: ESP32C5
+Download mode: uart
+Start time: 20250808-09:33
+Connect baud: 115200
+Com:COM4
+connecting...
+manufacturer_id: 0x20
+device_id: 0x4017
+fs:0x200200
+address/file: 0 D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\wifi_station.bin
+Wrote 967008 bytes (547953 compressed) at 0x00000000 in 5.2 seconds (effective 1492.1 kbit/s)...
+File: D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\wifi_station.bin
+File  md5: 731c41c02d38b94c3488d0ea56ab4a73
+Flash md5: 731c41c02d38b94c3488d0ea56ab4a73
+Hash of data verified.
+
+Leaving...
+com closed
+Total use time: 8 s
+Download result: PASS
+*************************** END ****************************
+
+*************************** START ****************************
+Chip: ESP32C5
+Download mode: uart
+Start time: 20250808-10:03
+Connect baud: 115200
+Com:COM4
+serial port open error
+*************************** START ****************************
+Chip: ESP32C5
+Download mode: uart
+Start time: 20250808-10:03
+Connect baud: 115200
+Com:COM4
+serial port open error
+*************************** START ****************************
+Chip: ESP32C5
+Download mode: uart
+Start time: 20250808-10:03
+Connect baud: 115200
+Com:COM4
+serial port open error
+*************************** START ****************************
+Chip: ESP32C5
+Download mode: uart
+Start time: 20250808-13:52
+Connect baud: 115200
+Com:COM4
+serial port open error
+*************************** START ****************************
+Chip: ESP32C5
+Download mode: uart
+Start time: 20250808-13:52
+Connect baud: 115200
+Com:COM4
+serial port open error
+*************************** START ****************************
+Chip: ESP32C5
+Download mode: uart
+Start time: 20250808-13:52
+Connect baud: 115200
+Com:COM4
+serial port open error
+*************************** START ****************************
+Chip: ESP32C5
+Download mode: uart
+Start time: 20250808-13:53
+Connect baud: 115200
+Com:COM4
+connecting...
+manufacturer_id: 0x20
+device_id: 0x4017
+fs:0x200200
+address/file: 0 D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\wifi_station.bin
+Wrote 983840 bytes (558262 compressed) at 0x00000000 in 4.0 seconds (effective 1956.0 kbit/s)...
+File: D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\wifi_station.bin
+File  md5: 7bd25177c7dee122a0c9f8c7d6f99446
+Flash md5: 7bd25177c7dee122a0c9f8c7d6f99446
+Hash of data verified.
+
+Leaving...
+com closed
+Total use time: 7 s
+Download result: PASS
+*************************** END ****************************
+
+*************************** START ****************************
+Chip: ESP32C5
+Download mode: uart
+Start time: 20250808-13:57
+Connect baud: 115200
+Com:COM4
+connecting...
+manufacturer_id: 0x20
+device_id: 0x4017
+fs:0x200200
+address/file: 0 D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\wifi_station.bin
+Wrote 983840 bytes (558262 compressed) at 0x00000000 in 5.2 seconds (effective 1514.3 kbit/s)...
+File: D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\wifi_station.bin
+File  md5: 7bd25177c7dee122a0c9f8c7d6f99446
+Flash md5: 7bd25177c7dee122a0c9f8c7d6f99446
+Hash of data verified.
+
+Leaving...
+com closed
+Total use time: 8 s
+Download result: PASS
+*************************** END ****************************
+
+*************************** START ****************************
+Chip: ESP32C5
+Download mode: usb
+Start time: 20250808-14:02
+Connect baud: 115200
+Com:COM4
+connecting...
+manufacturer_id: 0x20
+device_id: 0x4017
+fs:0x200200
+address/file: 0 D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\wifi_station.bin
+Wrote 983840 bytes (558262 compressed) at 0x00000000 in 5.2 seconds (effective 1520.3 kbit/s)...
+File: D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\wifi_station.bin
+File  md5: 7bd25177c7dee122a0c9f8c7d6f99446
+Flash md5: 7bd25177c7dee122a0c9f8c7d6f99446
+Hash of data verified.
+
+Leaving...
+com closed
+Total use time: 8 s
+Download result: PASS
+*************************** END ****************************
+
+*************************** START ****************************
+Chip: ESP32C5
+Download mode: usb
+Start time: 20250808-14:07
+Connect baud: 115200
+Com:COM4
+connecting...
+manufacturer_id: 0x20
+device_id: 0x4017
+com closed
+Total use time: 3 s
+Download result: PASS
+*************************** END ****************************
+
+*************************** START ****************************
+Chip: ESP32C5
+Download mode: usb
+Start time: 20250808-14:07
+Connect baud: 115200
+Com:COM4
+connecting...
+manufacturer_id: 0x20
+device_id: 0x4017
+fs:0x200200
+address/file: 8192 D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\bootloader.bin
+address/file: 32768 D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\partition-table.bin
+address/file: 65536 D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\wifi_station.bin
+Wrote 21888 bytes (13435 compressed) at 0x00002000 in 0.1 seconds (effective 1409.9 kbit/s)...
+Wrote 3072 bytes (103 compressed) at 0x00008000 in 0.0 seconds (effective 2272.3 kbit/s)...
+Wrote 983840 bytes (558262 compressed) at 0x00010000 in 4.0 seconds (effective 1947.9 kbit/s)...
+File: D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\bootloader.bin
+File  md5: 989d9642f9c05f4260353d4a20e0b424
+Flash md5: 989d9642f9c05f4260353d4a20e0b424
+Hash of data verified.
+File: D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\partition-table.bin
+File  md5: 5d61d196adc3dba01928f264eb169be7
+Flash md5: 5d61d196adc3dba01928f264eb169be7
+Hash of data verified.
+File: D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\wifi_station.bin
+File  md5: 7bd25177c7dee122a0c9f8c7d6f99446
+Flash md5: 7bd25177c7dee122a0c9f8c7d6f99446
+Hash of data verified.
+
+Leaving...
+com closed
+Total use time: 7 s
+Download result: PASS
+*************************** END ****************************
+
+*************************** START ****************************
+Chip: ESP32C5
+Download mode: usb
+Start time: 20250808-14:08
+Connect baud: 115200
+Com:COM4
+connecting...
+manufacturer_id: 0x20
+device_id: 0x4017
+fs:0x200200
+address/file: 8192 D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\bootloader.bin
+address/file: 32768 D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\partition-table.bin
+address/file: 65536 D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\wifi_station.bin
+Wrote 21888 bytes (13435 compressed) at 0x00002000 in 0.2 seconds (effective 796.3 kbit/s)...
+Wrote 3072 bytes (103 compressed) at 0x00008000 in 0.0 seconds (effective 917.0 kbit/s)...
+Wrote 983840 bytes (558262 compressed) at 0x00010000 in 5.2 seconds (effective 1527.1 kbit/s)...
+File: D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\bootloader.bin
+File  md5: 989d9642f9c05f4260353d4a20e0b424
+Flash md5: 989d9642f9c05f4260353d4a20e0b424
+Hash of data verified.
+File: D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\partition-table.bin
+File  md5: 5d61d196adc3dba01928f264eb169be7
+Flash md5: 5d61d196adc3dba01928f264eb169be7
+Hash of data verified.
+File: D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\wifi_station.bin
+File  md5: 7bd25177c7dee122a0c9f8c7d6f99446
+Flash md5: 7bd25177c7dee122a0c9f8c7d6f99446
+Hash of data verified.
+
+Leaving...
+com closed
+Total use time: 9 s
+Download result: PASS
+*************************** END ****************************
+
+*************************** START ****************************
+Chip: ESP32C5
+Download mode: usb
+Start time: 20250808-14:08
+Connect baud: 115200
+Com:COM4
+serial port open error
+*************************** START ****************************
+Chip: ESP32C5
+Download mode: usb
+Start time: 20250808-14:08
+Connect baud: 115200
+Com:COM4
+serial port open error
+*************************** START ****************************
+Chip: ESP32C5
+Download mode: usb
+Start time: 20250808-14:08
+Connect baud: 115200
+Com:COM4
+serial port open error
+*************************** START ****************************
+Chip: ESP32C5
+Download mode: usb
+Start time: 20250808-14:09
+Connect baud: 115200
+Com:COM4
+serial port open error
+*************************** START ****************************
+Chip: ESP32C5
+Download mode: usb
+Start time: 20250808-14:09
+Connect baud: 115200
+Com:COM4
+serial port open error
+*************************** START ****************************
+Chip: ESP32C5
+Download mode: usb
+Start time: 20250808-14:09
+Connect baud: 115200
+Com:COM4
+serial port open error
+*************************** START ****************************
+Chip: ESP32C5
+Download mode: usb
+Start time: 20250808-14:09
+Connect baud: 115200
+Com:COM4
+serial port open error
+*************************** START ****************************
+Chip: ESP32C5
+Download mode: usb
+Start time: 20250808-14:09
+Connect baud: 115200
+Com:COM4
+serial port open error
+*************************** START ****************************
+Chip: ESP32C5
+Download mode: usb
+Start time: 20250808-14:09
+Connect baud: 115200
+Com:COM4
+serial port open error
+*************************** START ****************************
+Chip: ESP32C5
+Download mode: usb
+Start time: 20250808-14:09
+Connect baud: 115200
+Com:COM4
+serial port open error
+*************************** START ****************************
+Chip: ESP32C5
+Download mode: usb
+Start time: 20250808-14:09
+Connect baud: 115200
+Com:COM4
+serial port open error
+*************************** START ****************************
+Chip: ESP32C5
+Download mode: usb
+Start time: 20250808-14:09
+Connect baud: 115200
+Com:COM4
+connecting...
+manufacturer_id: 0x20
+device_id: 0x4017
+com closed
+Total use time: 2 s
+Download result: PASS
+*************************** END ****************************
+
+*************************** START ****************************
+Chip: ESP32C5
+Download mode: uart
+Start time: 20250809-13:03
+Connect baud: 115200
+Com:COM4
+connecting...
+manufacturer_id: 0x20
+device_id: 0x4017
+fs:0x200200
+address/file: 8192 D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\bootloader.bin
+address/file: 32768 D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\partition-table.bin
+address/file: 65536 D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\wifi_station.bin
+Wrote 21888 bytes (13436 compressed) at 0x00002000 in 0.2 seconds (effective 903.5 kbit/s)...
+Wrote 3072 bytes (103 compressed) at 0x00008000 in 0.0 seconds (effective 967.0 kbit/s)...
+Wrote 983008 bytes (558160 compressed) at 0x00010000 in 4.0 seconds (effective 1974.1 kbit/s)...
+File: D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\bootloader.bin
+File  md5: 034faca31720722521af48a57a65627c
+Flash md5: 034faca31720722521af48a57a65627c
+Hash of data verified.
+File: D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\partition-table.bin
+File  md5: 5d61d196adc3dba01928f264eb169be7
+Flash md5: 5d61d196adc3dba01928f264eb169be7
+Hash of data verified.
+File: D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\wifi_station.bin
+File  md5: a60e7d1ab4f2a75e2003f1b65126d740
+Flash md5: a60e7d1ab4f2a75e2003f1b65126d740
+Hash of data verified.
+
+Leaving...
+com closed
+Total use time: 7 s
+Download result: PASS
+*************************** END ****************************
+
+*************************** START ****************************
+Chip: ESP32C5
+Download mode: uart
+Start time: 20250809-13:35
+Connect baud: 115200
+Com:COM4
+connecting...
+manufacturer_id: 0x20
+device_id: 0x4017
+fs:0x200200
+address/file: 8192 D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\bootloader.bin
+address/file: 32768 D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\partition-table.bin
+address/file: 65536 D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\wifi_station.bin
+Wrote 21888 bytes (13436 compressed) at 0x00002000 in 0.2 seconds (effective 904.6 kbit/s)...
+Wrote 3072 bytes (103 compressed) at 0x00008000 in 0.0 seconds (effective 916.3 kbit/s)...
+Wrote 983712 bytes (558398 compressed) at 0x00010000 in 4.0 seconds (effective 1959.7 kbit/s)...
+File: D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\bootloader.bin
+File  md5: 034faca31720722521af48a57a65627c
+Flash md5: 034faca31720722521af48a57a65627c
+Hash of data verified.
+File: D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\partition-table.bin
+File  md5: 5d61d196adc3dba01928f264eb169be7
+Flash md5: 5d61d196adc3dba01928f264eb169be7
+Hash of data verified.
+File: D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\wifi_station.bin
+File  md5: 2cb43c40cf14aad810b7fd1ba8b59eda
+Flash md5: 2cb43c40cf14aad810b7fd1ba8b59eda
+Hash of data verified.
+
+Leaving...
+com closed
+Total use time: 7 s
+Download result: PASS
+*************************** END ****************************
+
+*************************** START ****************************
+Chip: ESP32C5
+Download mode: uart
+Start time: 20250809-14:43
+Connect baud: 115200
+Com:COM4
+connecting...
+manufacturer_id: 0x20
+device_id: 0x4017
+fs:0x200200
+address/file: 8192 D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\bootloader.bin
+address/file: 32768 D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\partition-table.bin
+address/file: 65536 D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\wifi_station.bin
+Wrote 21888 bytes (13436 compressed) at 0x00002000 in 0.2 seconds (effective 776.7 kbit/s)...
+Wrote 3072 bytes (103 compressed) at 0x00008000 in 0.0 seconds (effective 867.3 kbit/s)...
+Wrote 983232 bytes (558179 compressed) at 0x00010000 in 5.2 seconds (effective 1515.4 kbit/s)...
+File: D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\bootloader.bin
+File  md5: 034faca31720722521af48a57a65627c
+Flash md5: 034faca31720722521af48a57a65627c
+Hash of data verified.
+File: D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\partition-table.bin
+File  md5: 5d61d196adc3dba01928f264eb169be7
+Flash md5: 5d61d196adc3dba01928f264eb169be7
+Hash of data verified.
+File: D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\wifi_station.bin
+File  md5: a9e307c6cd6e12bad8f12ee05dfe3c85
+Flash md5: a9e307c6cd6e12bad8f12ee05dfe3c85
+Hash of data verified.
+
+Leaving...
+com closed
+Total use time: 9 s
+Download result: PASS
+*************************** END ****************************
+
+*************************** START ****************************
+Chip: ESP32C5
+Download mode: uart
+Start time: 20250809-14:53
+Connect baud: 115200
+Com:COM4
+connecting...
+manufacturer_id: 0x20
+device_id: 0x4017
+fs:0x200200
+address/file: 8192 D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\bootloader.bin
+address/file: 32768 D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\partition-table.bin
+address/file: 65536 D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\wifi_station.bin
+Wrote 21888 bytes (13436 compressed) at 0x00002000 in 0.2 seconds (effective 787.0 kbit/s)...
+Wrote 3072 bytes (103 compressed) at 0x00008000 in 0.0 seconds (effective 881.7 kbit/s)...
+Wrote 983296 bytes (558241 compressed) at 0x00010000 in 5.2 seconds (effective 1510.5 kbit/s)...
+File: D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\bootloader.bin
+File  md5: 034faca31720722521af48a57a65627c
+Flash md5: 034faca31720722521af48a57a65627c
+Hash of data verified.
+File: D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\partition-table.bin
+File  md5: 5d61d196adc3dba01928f264eb169be7
+Flash md5: 5d61d196adc3dba01928f264eb169be7
+Hash of data verified.
+File: D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\wifi_station.bin
+File  md5: 4b427c47b3f7554a40d5798554b24f20
+Flash md5: 4b427c47b3f7554a40d5798554b24f20
+Hash of data verified.
+
+Leaving...
+com closed
+Total use time: 9 s
+Download result: PASS
+*************************** END ****************************
+
+*************************** START ****************************
+Chip: ESP32C5
+Download mode: uart
+Start time: 20250809-15:33
+Connect baud: 115200
+Com:COM4
+serial port open error
+*************************** START ****************************
+Chip: ESP32C5
+Download mode: uart
+Start time: 20250809-15:33
+Connect baud: 115200
+Com:COM4
+serial port open error
+*************************** START ****************************
+Chip: ESP32C5
+Download mode: uart
+Start time: 20250809-15:34
+Connect baud: 115200
+Com:COM4
+connecting...
+manufacturer_id: 0x20
+device_id: 0x4017
+fs:0x200200
+address/file: 8192 D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\bootloader.bin
+address/file: 32768 D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\partition-table.bin
+address/file: 65536 D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\wifi_station.bin
+Wrote 21888 bytes (13436 compressed) at 0x00002000 in 0.2 seconds (effective 781.7 kbit/s)...
+Wrote 3072 bytes (103 compressed) at 0x00008000 in 0.0 seconds (effective 852.2 kbit/s)...
+Wrote 984688 bytes (559395 compressed) at 0x00010000 in 5.2 seconds (effective 1513.0 kbit/s)...
+File: D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\bootloader.bin
+File  md5: 034faca31720722521af48a57a65627c
+Flash md5: 034faca31720722521af48a57a65627c
+Hash of data verified.
+File: D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\partition-table.bin
+File  md5: 5d61d196adc3dba01928f264eb169be7
+Flash md5: 5d61d196adc3dba01928f264eb169be7
+Hash of data verified.
+File: D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\wifi_station.bin
+File  md5: bcf43c34d2a42457d8e37745758035af
+Flash md5: bcf43c34d2a42457d8e37745758035af
+Hash of data verified.
+
+Leaving...
+com closed
+Total use time: 9 s
+Download result: PASS
+*************************** END ****************************
+
+*************************** START ****************************
+Chip: ESP32C5
+Download mode: uart
+Start time: 20250809-15:41
+Connect baud: 115200
+Com:COM4
+connecting...
+manufacturer_id: 0x20
+device_id: 0x4017
+fs:0x200200
+address/file: 8192 D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\bootloader.bin
+address/file: 32768 D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\partition-table.bin
+address/file: 65536 D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\wifi_station.bin
+Wrote 21888 bytes (13436 compressed) at 0x00002000 in 0.2 seconds (effective 780.1 kbit/s)...
+Wrote 3072 bytes (103 compressed) at 0x00008000 in 0.0 seconds (effective 863.1 kbit/s)...
+Wrote 983296 bytes (558238 compressed) at 0x00010000 in 5.2 seconds (effective 1517.3 kbit/s)...
+File: D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\bootloader.bin
+File  md5: 034faca31720722521af48a57a65627c
+Flash md5: 034faca31720722521af48a57a65627c
+Hash of data verified.
+File: D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\partition-table.bin
+File  md5: 5d61d196adc3dba01928f264eb169be7
+Flash md5: 5d61d196adc3dba01928f264eb169be7
+Hash of data verified.
+File: D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\wifi_station.bin
+File  md5: bba4e21c2564358539fe25553d45b45e
+Flash md5: bba4e21c2564358539fe25553d45b45e
+Hash of data verified.
+
+Leaving...
+com closed
+Total use time: 9 s
+Download result: PASS
+*************************** END ****************************
+
+*************************** START ****************************
+Chip: ESP32C5
+Download mode: uart
+Start time: 20250809-15:42
+Connect baud: 115200
+Com:COM4
+connecting...
+manufacturer_id: 0x20
+device_id: 0x4017
+fs:0x200200
+address/file: 8192 D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\bootloader.bin
+address/file: 32768 D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\partition-table.bin
+address/file: 65536 D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\wifi_station.bin
+Wrote 21888 bytes (13436 compressed) at 0x00002000 in 0.2 seconds (effective 778.1 kbit/s)...
+Wrote 3072 bytes (103 compressed) at 0x00008000 in 0.0 seconds (effective 855.3 kbit/s)...
+Wrote 983296 bytes (558238 compressed) at 0x00010000 in 5.2 seconds (effective 1516.6 kbit/s)...
+File: D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\bootloader.bin
+File  md5: 034faca31720722521af48a57a65627c
+Flash md5: 034faca31720722521af48a57a65627c
+Hash of data verified.
+File: D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\partition-table.bin
+File  md5: 5d61d196adc3dba01928f264eb169be7
+Flash md5: 5d61d196adc3dba01928f264eb169be7
+Hash of data verified.
+File: D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\wifi_station.bin
+File  md5: bba4e21c2564358539fe25553d45b45e
+Flash md5: bba4e21c2564358539fe25553d45b45e
+Hash of data verified.
+
+Leaving...
+com closed
+Total use time: 9 s
+Download result: PASS
+*************************** END ****************************
+
+*************************** START ****************************
+Chip: ESP32C5
+Download mode: uart
+Start time: 20250809-15:48
+Connect baud: 115200
+Com:COM4
+connecting...
+manufacturer_id: 0x20
+device_id: 0x4017
+com closed
+Total use time: 4 s
+Download result: PASS
+*************************** END ****************************
+
+*************************** START ****************************
+Chip: ESP32C5
+Download mode: uart
+Start time: 20250809-15:48
+Connect baud: 115200
+Com:COM4
+connecting...
+manufacturer_id: 0x20
+device_id: 0x4017
+fs:0x200200
+address/file: 8192 D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\bootloader.bin
+address/file: 32768 D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\partition-table.bin
+address/file: 65536 D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\wifi_station.bin
+Wrote 21888 bytes (13436 compressed) at 0x00002000 in 0.1 seconds (effective 1388.6 kbit/s)...
+Wrote 3072 bytes (103 compressed) at 0x00008000 in 0.0 seconds (effective 1947.8 kbit/s)...
+Wrote 983296 bytes (558238 compressed) at 0x00010000 in 4.0 seconds (effective 1954.4 kbit/s)...
+File: D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\bootloader.bin
+File  md5: 034faca31720722521af48a57a65627c
+Flash md5: 034faca31720722521af48a57a65627c
+Hash of data verified.
+File: D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\partition-table.bin
+File  md5: 5d61d196adc3dba01928f264eb169be7
+Flash md5: 5d61d196adc3dba01928f264eb169be7
+Hash of data verified.
+File: D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\wifi_station.bin
+File  md5: 0d978b41534252398732ca4eff713853
+Flash md5: 0d978b41534252398732ca4eff713853
+Hash of data verified.
+
+Leaving...
+com closed
+Total use time: 7 s
+Download result: PASS
+*************************** END ****************************
+
+*************************** START ****************************
+Chip: ESP32C5
+Download mode: uart
+Start time: 20250811-13:23
+Connect baud: 115200
+Com:COM4
+connecting...
+manufacturer_id: 0x20
+device_id: 0x4017
+fs:0x200200
+address/file: 8192 D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\bootloader.bin
+address/file: 32768 D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\partition-table.bin
+address/file: 65536 D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\wifi_station.bin
+Wrote 21888 bytes (13436 compressed) at 0x00002000 in 0.2 seconds (effective 785.4 kbit/s)...
+Wrote 3072 bytes (103 compressed) at 0x00008000 in 0.0 seconds (effective 853.3 kbit/s)...
+Wrote 983920 bytes (558974 compressed) at 0x00010000 in 5.2 seconds (effective 1527.2 kbit/s)...
+File: D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\bootloader.bin
+File  md5: 034faca31720722521af48a57a65627c
+Flash md5: 034faca31720722521af48a57a65627c
+Hash of data verified.
+File: D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\partition-table.bin
+File  md5: 5d61d196adc3dba01928f264eb169be7
+Flash md5: 5d61d196adc3dba01928f264eb169be7
+Hash of data verified.
+File: D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\wifi_station.bin
+File  md5: 87d7e72de2aa455d67b60f87031a648b
+Flash md5: 87d7e72de2aa455d67b60f87031a648b
+Hash of data verified.
+
+Leaving...
+com closed
+Total use time: 9 s
+Download result: PASS
+*************************** END ****************************
+
+*************************** START ****************************
+Chip: ESP32C5
+Download mode: uart
+Start time: 20250811-13:31
+Connect baud: 115200
+Com:COM4
+serial port open error
+*************************** START ****************************
+Chip: ESP32C5
+Download mode: uart
+Start time: 20250811-13:31
+Connect baud: 115200
+Com:COM4
+serial port open error
+*************************** START ****************************
+Chip: ESP32C5
+Download mode: uart
+Start time: 20250811-13:31
+Connect baud: 115200
+Com:COM4
+serial port open error
+*************************** START ****************************
+Chip: ESP32C5
+Download mode: uart
+Start time: 20250811-13:32
+Connect baud: 115200
+Com:COM4
+connecting...
+manufacturer_id: 0x20
+device_id: 0x4017
+com closed
+Total use time: 3 s
+Download result: PASS
+*************************** END ****************************
+
+*************************** START ****************************
+Chip: ESP32C5
+Download mode: uart
+Start time: 20250811-13:32
+Connect baud: 115200
+Com:COM4
+connecting...
+manufacturer_id: 0x20
+device_id: 0x4017
+fs:0x200200
+address/file: 8192 D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\bootloader.bin
+address/file: 32768 D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\partition-table.bin
+address/file: 65536 D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\wifi_station.bin
+Wrote 21888 bytes (13436 compressed) at 0x00002000 in 0.1 seconds (effective 1784.1 kbit/s)...
+Wrote 3072 bytes (103 compressed) at 0x00008000 in 0.0 seconds (effective 3002.9 kbit/s)...
+Wrote 983920 bytes (558967 compressed) at 0x00010000 in 2.7 seconds (effective 2920.2 kbit/s)...
+File: D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\bootloader.bin
+File  md5: 034faca31720722521af48a57a65627c
+Flash md5: 034faca31720722521af48a57a65627c
+Hash of data verified.
+File: D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\partition-table.bin
+File  md5: 5d61d196adc3dba01928f264eb169be7
+Flash md5: 5d61d196adc3dba01928f264eb169be7
+Hash of data verified.
+File: D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\wifi_station.bin
+File  md5: 5dd60eaa9d6671ab566e51e0e1108054
+Flash md5: 5dd60eaa9d6671ab566e51e0e1108054
+Hash of data verified.
+
+Leaving...
+com closed
+Total use time: 6 s
+Download result: PASS
+*************************** END ****************************
+
+*************************** START ****************************
+Chip: ESP32C5
+Download mode: uart
+Start time: 20250811-13:42
+Connect baud: 115200
+Com:COM4
+serial port open error
+*************************** START ****************************
+Chip: ESP32C5
+Download mode: uart
+Start time: 20250811-13:42
+Connect baud: 115200
+Com:COM4
+serial port open error
+*************************** START ****************************
+Chip: ESP32C5
+Download mode: uart
+Start time: 20250811-13:42
+Connect baud: 115200
+Com:COM4
+connecting...
+manufacturer_id: 0x20
+device_id: 0x4017
+com closed
+Total use time: 3 s
+Download result: PASS
+*************************** END ****************************
+
+*************************** START ****************************
+Chip: ESP32C5
+Download mode: uart
+Start time: 20250811-13:43
+Connect baud: 115200
+Com:COM4
+*************************** START ****************************
+Chip: ESP32C5
+Download mode: uart
+Start time: 20250811-13:43
+Connect baud: 115200
+Com:COM4
+*************************** START ****************************
+Chip: ESP32C5
+Download mode: uart
+Start time: 20250811-13:43
+Connect baud: 115200
+Com:COM4
+*************************** START ****************************
+Chip: ESP32C5
+Download mode: uart
+Start time: 20250811-13:43
+Connect baud: 115200
+Com:COM4
+connecting...
+manufacturer_id: 0x20
+device_id: 0x4017
+fs:0x200200
+address/file: 8192 D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\bootloader.bin
+address/file: 32768 D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\partition-table.bin
+address/file: 65536 D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\wifi_station.bin
+Wrote 21888 bytes (13436 compressed) at 0x00002000 in 0.1 seconds (effective 1375.9 kbit/s)...
+Wrote 3072 bytes (103 compressed) at 0x00008000 in 0.0 seconds (effective 2083.4 kbit/s)...
+Wrote 983920 bytes (559000 compressed) at 0x00010000 in 4.0 seconds (effective 1974.5 kbit/s)...
+File: D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\bootloader.bin
+File  md5: 034faca31720722521af48a57a65627c
+Flash md5: 034faca31720722521af48a57a65627c
+Hash of data verified.
+File: D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\partition-table.bin
+File  md5: 5d61d196adc3dba01928f264eb169be7
+Flash md5: 5d61d196adc3dba01928f264eb169be7
+Hash of data verified.
+File: D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\wifi_station.bin
+File  md5: f0af54f5afa88e26ba04ba3f07582755
+Flash md5: f0af54f5afa88e26ba04ba3f07582755
+Hash of data verified.
+
+Leaving...
+com closed
+Total use time: 7 s
+Download result: PASS
+*************************** END ****************************
+
+*************************** START ****************************
+Chip: ESP32C5
+Download mode: uart
+Start time: 20250811-13:50
+Connect baud: 115200
+Com:COM4
+serial port open error
+*************************** START ****************************
+Chip: ESP32C5
+Download mode: uart
+Start time: 20250811-13:50
+Connect baud: 115200
+Com:COM4
+connecting...
+manufacturer_id: 0x20
+device_id: 0x4017
+fs:0x200200
+address/file: 8192 D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\bootloader.bin
+address/file: 32768 D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\partition-table.bin
+address/file: 65536 D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\wifi_station.bin
+Wrote 21888 bytes (13436 compressed) at 0x00002000 in 0.2 seconds (effective 897.0 kbit/s)...
+Wrote 3072 bytes (103 compressed) at 0x00008000 in 0.0 seconds (effective 972.0 kbit/s)...
+Wrote 983920 bytes (558971 compressed) at 0x00010000 in 4.0 seconds (effective 1979.8 kbit/s)...
+File: D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\bootloader.bin
+File  md5: 034faca31720722521af48a57a65627c
+Flash md5: 034faca31720722521af48a57a65627c
+Hash of data verified.
+File: D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\partition-table.bin
+File  md5: 5d61d196adc3dba01928f264eb169be7
+Flash md5: 5d61d196adc3dba01928f264eb169be7
+Hash of data verified.
+File: D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\wifi_station.bin
+File  md5: a4c1138296f1feb17d808e534cff9c0e
+Flash md5: a4c1138296f1feb17d808e534cff9c0e
+Hash of data verified.
+
+Leaving...
+com closed
+Total use time: 7 s
+Download result: PASS
+*************************** END ****************************
+
+*************************** START ****************************
+Chip: ESP32C5
+Download mode: uart
+Start time: 20250917-09:21
+Connect baud: 115200
+Com:COM4
+connecting...
+manufacturer_id: 0x20
+device_id: 0x4017
+fs:0x200200
+address/file: 8192 D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\bootloader.bin
+address/file: 32768 D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\partition-table.bin
+address/file: 65536 D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\wifi_station.bin
+Wrote 21888 bytes (13438 compressed) at 0x00002000 in 0.2 seconds (effective 871.6 kbit/s)...
+Wrote 3072 bytes (104 compressed) at 0x00008000 in 0.0 seconds (effective 1060.6 kbit/s)...
+Wrote 1332544 bytes (771045 compressed) at 0x00010000 in 5.4 seconds (effective 1970.3 kbit/s)...
+File: D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\bootloader.bin
+File  md5: 52c330ea3e25913c063beb6741fa0932
+Flash md5: 52c330ea3e25913c063beb6741fa0932
+Hash of data verified.
+File: D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\partition-table.bin
+File  md5: d845cbc34f76d600bd979245058ddbe5
+Flash md5: d845cbc34f76d600bd979245058ddbe5
+Hash of data verified.
+File: D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\wifi_station.bin
+File  md5: 92c629893326b9de1de099168a9e82ec
+Flash md5: 92c629893326b9de1de099168a9e82ec
+Hash of data verified.
+
+Leaving...
+com closed
+Total use time: 9 s
+Download result: PASS
+*************************** END ****************************
+
+*************************** START ****************************
+Chip: ESP32C5
+Download mode: uart
+Start time: 20250917-09:42
+Connect baud: 115200
+Com:COM4
+connecting...
+manufacturer_id: 0x20
+device_id: 0x4017
+fs:0x200200
+address/file: 8192 D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\bootloader.bin
+address/file: 32768 D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\partition-table.bin
+address/file: 65536 D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\wifi_station.bin
+Wrote 21888 bytes (13438 compressed) at 0x00002000 in 0.2 seconds (effective 875.9 kbit/s)...
+Wrote 3072 bytes (104 compressed) at 0x00008000 in 0.0 seconds (effective 978.4 kbit/s)...
+Wrote 1332544 bytes (771045 compressed) at 0x00010000 in 5.4 seconds (effective 1980.2 kbit/s)...
+File: D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\bootloader.bin
+File  md5: 52c330ea3e25913c063beb6741fa0932
+Flash md5: 52c330ea3e25913c063beb6741fa0932
+Hash of data verified.
+File: D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\partition-table.bin
+File  md5: d845cbc34f76d600bd979245058ddbe5
+Flash md5: d845cbc34f76d600bd979245058ddbe5
+Hash of data verified.
+File: D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\wifi_station.bin
+File  md5: 92c629893326b9de1de099168a9e82ec
+Flash md5: 92c629893326b9de1de099168a9e82ec
+Hash of data verified.
+
+Leaving...
+com closed
+Total use time: 9 s
+Download result: PASS
+*************************** END ****************************
+
+*************************** START ****************************
+Chip: ESP32C5
+Download mode: uart
+Start time: 20250917-09:44
+Connect baud: 115200
+Com:COM4
+connecting...
+manufacturer_id: 0x20
+device_id: 0x4017
+com closed
+Total use time: 3 s
+Download result: PASS
+*************************** END ****************************
+
+*************************** START ****************************
+Chip: ESP32C5
+Download mode: uart
+Start time: 20250917-09:44
+Connect baud: 115200
+Com:COM4
+connecting...
+manufacturer_id: 0x20
+device_id: 0x4017
+fs:0x200200
+address/file: 8192 D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\bootloader.bin
+address/file: 32768 D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\partition-table.bin
+address/file: 65536 D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\wifi_station.bin
+Wrote 21888 bytes (13438 compressed) at 0x00002000 in 0.1 seconds (effective 1747.6 kbit/s)...
+Wrote 3072 bytes (104 compressed) at 0x00008000 in 0.0 seconds (effective 2459.5 kbit/s)...
+Wrote 1332544 bytes (771045 compressed) at 0x00010000 in 3.7 seconds (effective 2892.4 kbit/s)...
+File: D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\bootloader.bin
+File  md5: 52c330ea3e25913c063beb6741fa0932
+Flash md5: 52c330ea3e25913c063beb6741fa0932
+Hash of data verified.
+File: D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\partition-table.bin
+File  md5: d845cbc34f76d600bd979245058ddbe5
+Flash md5: d845cbc34f76d600bd979245058ddbe5
+Hash of data verified.
+File: D:\soft\vscode\git\ESP_BC\flash_download_tool\dl_temp\bin_tmp\downloadPanel1\wifi_station.bin
+File  md5: 92c629893326b9de1de099168a9e82ec
+Flash md5: 92c629893326b9de1de099168a9e82ec
+Hash of data verified.
+
+Leaving...
+com closed
+Total use time: 7 s
+Download result: PASS
+*************************** END ****************************
+
