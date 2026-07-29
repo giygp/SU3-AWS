@@ -35,4 +35,7 @@ id/ID_Generator_Tool/*.exe
 components/protobuf.rar
 
 flash_download_tool/logs/
+id/flash_download_tool/logs/
+**/flash_download_tool/logs/
+**/flash_download_tool/dl_temp/
 
