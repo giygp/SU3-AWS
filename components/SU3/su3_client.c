@@ -7,6 +7,7 @@
 #include "su3_client.h"
 #include "su3_frame.h"
 #include "su3_proto.h"
+#include "su3_ota.h"
 #include <string.h>
 #include <time.h>
 #include "esp_log.h"
@@ -19,8 +20,8 @@ static const char *TAG = "su3_client";
 
 #define SU3_RX_CHUNK           256
 #define SU3_TX_FRAME_MAX       192
-#define SU3_CLI_IDLE_MS        80U    /* list 多应答空闲结束 */
-#define SU3_RX_TASK_STACK      8192   /* on_topic/解码在 RX 上下文，4096 易栈溢出破坏 UART ringbuf */
+#define SU3_CLI_IDLE_MS        100U   /* list 多帧：距上次收包空闲即结束 */
+#define SU3_RX_TASK_STACK      16384  /* on_topic/解码+偶发 MQTT 错误路径仍在 RX，8K 断网易溢出 */
 #define SU3_RX_TASK_PRIO       10
 
 typedef struct {
@@ -146,10 +147,15 @@ static void pending_feed_text(su3_addr_t src, const char *text)
     if (s_pending.rsp == NULL || s_pending.rsp_cap == 0) {
         return;
     }
-    /* list 可能用多条 CLI 消息返回；补换行供上层逐条解析和打印。 */
-    if (s_pending.rsp_len > 0 && s_pending.rsp_len < s_pending.rsp_cap - 1U) {
-        s_pending.rsp[s_pending.rsp_len++] = '\n';
-        s_pending.rsp[s_pending.rsp_len] = '\0';
+    /* list 多帧拼接：仅在两段之间缺分隔时补一个 \n，避免 \n\n */
+    if (s_pending.rsp_len > 0 && tlen > 0 &&
+        s_pending.rsp_len < s_pending.rsp_cap - 1U) {
+        char last = s_pending.rsp[s_pending.rsp_len - 1U];
+        char first = text[0];
+        if (last != '\n' && first != '\n') {
+            s_pending.rsp[s_pending.rsp_len++] = '\n';
+            s_pending.rsp[s_pending.rsp_len] = '\0';
+        }
     }
     if (s_pending.rsp_len + tlen + 1U > s_pending.rsp_cap) {
         tlen = s_pending.rsp_cap - s_pending.rsp_len - 1U;
@@ -173,6 +179,17 @@ static void su3_on_pdu(const su3_pdu_info_t *pdu, void *user)
         return;
     }
 
+    /* port4 OTA 应答：禁止当 protobuf topic 旁路 */
+    if (SU3_PORT_OF(pdu->src_addr) == SU3_PORT_OTA) {
+        su3_ota_feed(pdu->src_addr, pdu->pb_data, pdu->pb_len);
+        return;
+    }
+
+    /* 升级期间：仅保留 CLI 事务应答（set mode 3）；丢弃业务 topic 与被动 CLI 推送 */
+    if (su3_ota_is_busy() && pdu->topic != SU3_TOPIC_CLI) {
+        return;
+    }
+
     // ESP_LOGI(TAG,"PDU: src=0x%02X dst=0x%02X topic=%u pb_len=%u",pdu->src_addr,pdu->dst_addr,(unsigned)pdu->topic,(unsigned)pdu->pb_len);
     
     if (pdu->topic == SU3_TOPIC_CLI) /* CLI 消息处理 */
@@ -180,10 +197,37 @@ static void su3_on_pdu(const su3_pdu_info_t *pdu, void *user)
         memset(devid, 0, sizeof(devid));
         if (su3_proto_decode_cli(pdu->pb_data, pdu->pb_len, cmd, sizeof(cmd),
                                  devid, sizeof(devid)) != ESP_OK) {
+            printf("cli decode fail src=0x%02X dst=0x%02X pb_len=%u hex:",
+                   pdu->src_addr, pdu->dst_addr, (unsigned)pdu->pb_len);
+            {
+                size_t i;
+                size_t n = pdu->pb_len < 32U ? pdu->pb_len : 32U;
+                for (i = 0; i < n; i++) {
+                    printf(" %02X", pdu->pb_data[i]);
+                }
+            }
+            printf("\n");
             return;
         }
-        ESP_LOGI(TAG, "cli src=0x%02X cmd=\"%s\"", pdu->src_addr, cmd);
+        /* list 等多行文本用 printf，避免 ESP_LOG 把换行拆成多条日志头 */
+        printf("cli rx src=0x%02X dst=0x%02X len=%u devid=\"%s\" cmd=\"%s\"\n",
+               pdu->src_addr, pdu->dst_addr, (unsigned)pdu->pb_len,
+               devid[0] ? devid : "", cmd);
         su3_store_peer_id(pdu->src_addr, devid);
+
+        /* hello / list updata 是被动上报，不能当作 cli_exec 的应答 */
+        if (strstr(cmd, "hello") != NULL || strstr(cmd, "list updata") != NULL) {
+            if (su3_ota_is_busy()) {
+                return;
+            }
+            if (strstr(cmd, "hello") != NULL && s_handlers.on_hello != NULL) {
+                s_handlers.on_hello(pdu->src_addr, s_handlers.user);
+            }
+            if (s_handlers.on_cli_push != NULL) {
+                s_handlers.on_cli_push(pdu->src_addr, cmd, devid, s_handlers.user);
+            }
+            return;
+        }
 
         if (xSemaphoreTake(s_pending_mutex, pdMS_TO_TICKS(10)) == pdTRUE) {
             if (s_pending.active &&
@@ -195,8 +239,8 @@ static void su3_on_pdu(const su3_pdu_info_t *pdu, void *user)
             xSemaphoreGive(s_pending_mutex);
         }
 
-        if (s_handlers.on_hello != NULL && strstr(cmd, "hello") != NULL) {
-            s_handlers.on_hello(pdu->src_addr, s_handlers.user);
+        if (su3_ota_is_busy()) {
+            return;
         }
         if (s_handlers.on_cli_push != NULL) {
             s_handlers.on_cli_push(pdu->src_addr, cmd, devid, s_handlers.user);
@@ -204,9 +248,11 @@ static void su3_on_pdu(const su3_pdu_info_t *pdu, void *user)
         return;
     }
 
-    if (s_handlers.on_topic != NULL) /* 其他 topic 消息处理 */
-    { 
-        s_handlers.on_topic(pdu->src_addr, pdu->topic, pdu->pb_data, pdu->pb_len, s_handlers.user); /* 其他 topic 消息处理 回调到上层 su3_on_topic 处理*/
+    printf("su3 rx topic=%u src=0x%02X dst=0x%02X pb_len=%u\n",
+           (unsigned)pdu->topic, pdu->src_addr, pdu->dst_addr, (unsigned)pdu->pb_len);
+    if (s_handlers.on_topic != NULL)
+    {
+        s_handlers.on_topic(pdu->src_addr, pdu->topic, pdu->pb_data, pdu->pb_len, s_handlers.user);
     }
 }
 
@@ -226,6 +272,28 @@ static esp_err_t su3_uart_send_frame(const uint8_t *frame, size_t len)
         return ESP_FAIL;
     }
     return ESP_OK;
+}
+
+/** 组帧发送裸 PDU（OTA / 内部）；供 su3_ota 使用 */
+esp_err_t su3_send_pdu(uint8_t src, uint8_t dst, const uint8_t *pdu, size_t pdu_len)
+{
+    uint8_t frame[SU3_TX_FRAME_MAX];
+    size_t frame_len;
+
+    if (!s_ready || pdu == NULL || pdu_len == 0) {
+        return ESP_ERR_INVALID_STATE;
+    }
+    frame_len = su3_frame_build(src, dst, SU3_MF_SINGLE, pdu, pdu_len,
+                                frame, sizeof(frame));
+    if (frame_len == 0) {
+        return ESP_FAIL;
+    }
+    return su3_uart_send_frame(frame, frame_len);
+}
+
+uint8_t su3_self_addr(void)
+{
+    return s_ready ? s_cfg.self_addr : SU3_ADDR_ESP32_DEFAULT;
 }
 
 static esp_err_t su3_send_cli_pdu(su3_addr_t dest, const char *cmd)
@@ -262,6 +330,7 @@ static esp_err_t su3_send_cli_pdu(su3_addr_t dest, const char *cmd)
     return err;
 }
 
+/** list 空闲结束：RX 与 cli_exec 等待侧都会调用（避免 RX 被 on_topic 占住时永远不结束） */
 static void su3_check_list_idle(void)
 {
     if (xSemaphoreTake(s_pending_mutex, 0) != pdTRUE) {
@@ -273,6 +342,8 @@ static void su3_check_list_idle(void)
         TickType_t now = xTaskGetTickCount();
         if ((now - s_pending.last_feed_tick) >= pdMS_TO_TICKS(SU3_CLI_IDLE_MS)) {
             s_pending.active = false;
+            ESP_LOGI(TAG, "list idle-done src=0x%02X len=%u",
+                     s_pending.expect_src, (unsigned)s_pending.rsp_len);
             if (s_pending.done) {
                 xSemaphoreGive(s_pending.done);
             }
@@ -400,6 +471,7 @@ esp_err_t su3_init(const su3_config_t *cfg)
         return ESP_ERR_NO_MEM;
     }
 
+    su3_ota_init();
     s_ready = true;
     ESP_LOGI(TAG, "su3_init ok uart=%d baud=%d self=0x%02X L=0x%02X R=0x%02X pins tx=%d rx=%d",
              (int)s_cfg.uart_port, s_cfg.baud_rate, s_cfg.self_addr,
@@ -467,13 +539,46 @@ esp_err_t su3_cli_exec(su3_addr_t dest, const char *cmd,char *rsp, size_t rsp_le
         return err;
     }
 
-    if (xSemaphoreTake(s_pending.done, pdMS_TO_TICKS(timeout_ms)) != pdTRUE) {
-        xSemaphoreTake(s_pending_mutex, portMAX_DELAY);
-        pending_clear();
-        xSemaphoreGive(s_pending_mutex);
-        ESP_LOGW(TAG, "cli_exec TIMEOUT dest=0x%02X cmd=\"%s\" %ums",
-                 dest, cmd, (unsigned)timeout_ms);
-        return ESP_ERR_TIMEOUT;
+    /* 分段等待：MULTIFRAME 时等待侧也跑 idle，不依赖 RX 是否空闲 */
+    {
+        TickType_t t0 = xTaskGetTickCount();
+        TickType_t wait_ticks = pdMS_TO_TICKS(timeout_ms);
+        bool got_done = false;
+
+        while ((xTaskGetTickCount() - t0) < wait_ticks) {
+            if (kind == SU3_RESP_MULTIFRAME) {
+                su3_check_list_idle();
+            }
+            if (xSemaphoreTake(s_pending.done, pdMS_TO_TICKS(20)) == pdTRUE) {
+                got_done = true;
+                break;
+            }
+        }
+        if (!got_done && kind == SU3_RESP_MULTIFRAME) {
+            su3_check_list_idle();
+            if (xSemaphoreTake(s_pending.done, 0) == pdTRUE) {
+                got_done = true;
+            }
+        }
+
+        if (!got_done) {
+            bool have_partial = false;
+
+            xSemaphoreTake(s_pending_mutex, portMAX_DELAY);
+            /* list 已拼到内容：超时也按成功返回，避免把报告头冲成 "timeout" */
+            have_partial = (kind == SU3_RESP_MULTIFRAME &&
+                            s_pending.got_any && s_pending.rsp_len > 0U);
+            pending_clear();
+            xSemaphoreGive(s_pending_mutex);
+            if (have_partial) {
+                ESP_LOGW(TAG, "cli_exec list timeout-but-data dest=0x%02X len=%u",
+                         dest, (unsigned)strlen(rsp));
+                return ESP_OK;
+            }
+            ESP_LOGW(TAG, "cli_exec TIMEOUT dest=0x%02X cmd=\"%s\" %ums",
+                     dest, cmd, (unsigned)timeout_ms);
+            return ESP_ERR_TIMEOUT;
+        }
     }
 
     xSemaphoreTake(s_pending_mutex, portMAX_DELAY);
@@ -528,10 +633,18 @@ bool su3_is_ready(void)
 
 esp_err_t su3_sensor_ota(su3_addr_t dest, const uint8_t *payload, size_t len)
 {
-    (void)dest;
-    (void)payload;
-    (void)len;
-    /* TODO(SU3): 传感器固件升级协议与 RX 互斥尚未实现 */
-    ESP_LOGW(TAG, "su3_sensor_ota not implemented");
-    return ESP_ERR_NOT_SUPPORTED;
+    return su3_ota_flash_side(dest, payload, len);
+}
+
+bool su3_sensor_ota_busy(void)
+{
+    return su3_ota_is_busy();
+}
+
+void su3_uart_flush_rx(void)
+{
+    if (!s_ready) {
+        return;
+    }
+    uart_flush_input(s_cfg.uart_port);
 }

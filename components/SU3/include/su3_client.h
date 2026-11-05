@@ -52,16 +52,24 @@ su3_side_t su3_addr_to_side(su3_addr_t addr);
 bool su3_is_ready(void);
 
 /**
- * 设置双侧 CLI 共用的 CliCommand.deviceID（主芯片 id）。
- * 通常在左路 set devid 成功后调用。
+ * 设置 CLI 共用的 CliCommand.deviceID（短 devid，如 KSSL00002）。
+ * 通常在整机 set devid 成功后调用。
  */
 void su3_set_cli_device_id(const char *device_id);
 
 /**
- * 传感器固件 OTA（预留接口，当前未实现）。
- * @return 一律 ESP_ERR_NOT_SUPPORTED
+ * 传感器固件 OTA（port4）：对 dest 侧执行 set mode 3 → 清盘 → 分包 → 结束。
+ * @param dest     业务地址（左 0x33 / 右 0x36）
+ * @param payload  完整固件镜像
+ * @param len      镜像长度
  */
 esp_err_t su3_sensor_ota(su3_addr_t dest, const uint8_t *payload, size_t len);
+
+/** 是否正在串口刷写（升级期应停补传 / 拒 CLI） */
+bool su3_sensor_ota_busy(void);
+
+/** 清空 UART RX（mode3 后对齐 ESP_BC flush） */
+void su3_uart_flush_rx(void);
 
 #ifdef __cplusplus
 }

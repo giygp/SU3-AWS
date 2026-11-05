@@ -3,7 +3,8 @@ idf_component_register(SRCS "app_control.c"
                     "../common"
                     "../use_wifi"
                     "../use_uart"
+                    "../use_ble_server"
                     "../protobuf" 
                     "../use_mfp"
                     "../SU3/include"
-                    REQUIRES json nvs_flash bt mqtt SU3)
+                    REQUIRES json nvs_flash bt mqtt SU3 use_ble_server)

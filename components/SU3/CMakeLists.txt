@@ -4,6 +4,7 @@ idf_component_register(
         "su3_frame.c"
         "su3_proto.c"
         "su3_client.c"
+        "su3_ota.c"
     INCLUDE_DIRS
         "include"
         "."

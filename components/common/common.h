@@ -39,7 +39,7 @@
 #define PRODUCT_KEY                                 "QuTVRApZSgFHJ3Vm"
 #define DEVEICE_SECRET                              "f44a9751040c5a4de9c89a6c7dfd00b0"
 /* OTA inform / 版本比较格式：SL_ESP_YYYY_A_B_C（A/B/C 为单位数字） */
-#define INIT_VERSION                                "SL_ESP_2026_1_0_0"
+#define INIT_VERSION                                "SL_ESP_2026_1_1_3"
 // #define CINFIG_VERSION                              "settingConfig_001" 
 
 #define UART1_TXD                                   (22)
@@ -54,6 +54,8 @@
 #define UART_CTR                                    (33)
 /** SU3 传感器模块电源使能：高电平上电（原理图 GPIO12，复位默认关） */
 #define SU3_PWR_EN_GPIO                             (12)
+/** APP/板端命令：GPIO12 先关再开的断电时长（ms） */
+#define SU3_PWR_CYCLE_OFF_MS                        (500)
 
 #define BUF_SIZE                                    (1024)  // uart2 接收缓存
 
@@ -186,7 +188,7 @@ typedef struct
 {
     char topic[512];
     uint32_t topic_len;
-    uint8_t data[512];
+    uint8_t data[1024];   /* OTA 等下发含长 URL，512 易截断 */
     uint32_t data_len;
 } mmqtt_msg_t;
 
@@ -231,12 +233,23 @@ typedef struct
     uint8_t time[6];
 }utc_info_t;
 
+/** 同时支持的手机 BLE 连接数（与业务“双用户同连”一致） */
+#define BLE_CONN_MAX                                2
+
 typedef struct
 {
-    bool flag;
-    uint16_t gatts_if;
+    bool in_use;
     uint16_t conn_id;
-    uint16_t handle;
+    bool notify_en;   /* CCCD Notify 是否开启 */
+} ble_conn_t;
+
+typedef struct
+{
+    bool flag;                /* 至少一路已连接 */
+    uint16_t gatts_if;
+    uint16_t handle;          /* Char A value handle，供 Notify */
+    ble_conn_t conns[BLE_CONN_MAX];
+    uint8_t conn_count;
     QueueHandle_t xQueue;
     data_rec_t data_rec;
 }ble_link_info_t;
@@ -574,15 +587,21 @@ typedef struct
     uint8_t data_up_switch;
     char report[128];
     char id[20];
+    /** 传感器固件版本缓存（NVS key=sensor_ver；左右同源硬件，只存一份） */
+    char sensor_ver[48];
 } device_info_t;
 
 #if SU3_USE_NEW_STACK
 #include "qs_protobuf.h"
-/** 双路传感器本地缓存（左=0x33，右=0x36） */
+/** 双路传感器本地缓存（左=0x33，右=0x36）
+ * hello/mode/rtc/devid 为整机状态（两侧 setup_done 同步）；
+ * 实时与报告缓存仍按左右分路。
+ */
 typedef struct {
     bool hello_seen;
-    bool need_setup;      /* true=待 set mode；mode 成功后清零 */
-    bool setup_done;      /* mode + rtc 都成功 */
+    bool need_setup;      /* 整机待 set mode/devid；两侧同步置位 */
+    bool setup_done;      /* 整机 mode+rtc 完成；两侧同步置位 */
+    bool data_seen;       /* 该侧已收到 1s/60s；整机 setup 可用任一侧 */
     bool fresh_1s;
     bool fresh_1min;
     char device_id[24];
@@ -596,6 +615,19 @@ extern su3_sensor_side_t g_su3_sensor[SU3_SENSOR_SIDE_MAX];
 
 void device_init(void);
 
+/**
+ * SU3 供电脉冲使能：GPIO12 先关 SU3_PWR_CYCLE_OFF_MS 再开（冷启动）。
+ * 供 APP deviceCli `su3Enable` / 板端自用；不含上电 10s 错峰等待。
+ */
+void su3_pwr_cycle(void);
+
+/** GPIO12 仅拉低 / 仅拉高（deviceCli 诊断用，不含 re-setup） */
+void su3_pwr_off(void);
+void su3_pwr_on(void);
+
+/** 查询 GPIO12 输出电平，写入 out：`high` 或 `low` */
+void su3_pwr_gpio_query(char *out, size_t out_len);
+
 uint8_t get_wifi_status(void);
 void set_wifi_status(uint8_t value);
 uint8_t get_ble_status(void);
@@ -604,4 +636,8 @@ uint8_t get_mqtt_status(void);
 void set_mqtt_status(uint8_t value);
 uint8_t get_one_key_config_wifi_status(void);
 void set_one_key_config_wifi_status(uint8_t value);
+
+/** 打印堆内存：内部 RAM / DMA / PSRAM，where 为场景标签 */
+void log_heap_info(const char *where);
+
 #endif

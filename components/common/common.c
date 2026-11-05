@@ -10,6 +10,8 @@
 #include <string.h>
 #include "driver/gpio.h"
 #include "esp_log.h"
+#include "esp_system.h"
+#include "esp_heap_caps.h"
 #include "pb_decode.h"
 #include "keesoncloud.pb.h"
 #include "qs_protobuf.h"
@@ -20,7 +22,6 @@ static const char *TAG = "common";
 device_info_t *device_info;
 qs_pb_msg_sensor_5sec_info *user_5s_sensor_info;
 qs_pb_msg_sensor_1min_info *user_60s_sensor_info;
-qs_pb_msg_sleep_apnea_info *user_sa_sensor_info;
 
 #if SU3_USE_NEW_STACK
 su3_sensor_side_t g_su3_sensor[SU3_SENSOR_SIDE_MAX];
@@ -82,6 +83,32 @@ uint8_t get_mqtt_status(void)
 void set_mqtt_status(uint8_t value)
 {
 	device_info->aliyun.flag = value;
+}
+
+/**
+ * 打印堆内存概况：总堆 / 内部 RAM / PSRAM（用于 OTA 双 TLS 等排查）
+ * @param where 场景标签，如 "mqtt_ok" / "ota_before" / "period"
+ */
+void log_heap_info(const char *where)
+{
+	size_t free_all = esp_get_free_heap_size();
+	size_t min_all = esp_get_minimum_free_heap_size();
+	size_t free_int = heap_caps_get_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
+	size_t largest_int = heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
+	size_t free_dma = heap_caps_get_free_size(MALLOC_CAP_DMA);
+	size_t largest_dma = heap_caps_get_largest_free_block(MALLOC_CAP_DMA);
+	size_t free_spiram = heap_caps_get_free_size(MALLOC_CAP_SPIRAM);
+	size_t largest_spiram = heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM);
+
+	ESP_LOGI(TAG,
+		 "[mem] %s | heap free=%u min_ever=%u | "
+		 "internal free=%u largest=%u | dma free=%u largest=%u | "
+		 "spiram free=%u largest=%u",
+		 (where != NULL && where[0] != '\0') ? where : "?",
+		 (unsigned)free_all, (unsigned)min_all,
+		 (unsigned)free_int, (unsigned)largest_int,
+		 (unsigned)free_dma, (unsigned)largest_dma,
+		 (unsigned)free_spiram, (unsigned)largest_spiram);
 }
 
 static qs_settings_aliyun_t m_aliyun;
@@ -188,10 +215,6 @@ void param_config_init(void)
 	user_60s_sensor_info = (qs_pb_msg_sensor_1min_info *)malloc(sizeof(qs_pb_msg_sensor_1min_info));
     memset(user_60s_sensor_info, 0, sizeof(qs_pb_msg_sensor_1min_info));
 
-	//SA数据
-	user_sa_sensor_info = (qs_pb_msg_sleep_apnea_info *)malloc(sizeof(qs_pb_msg_sleep_apnea_info));
-	memset(user_sa_sensor_info, 0, sizeof(qs_pb_msg_sleep_apnea_info));
-
 #if SU3_USE_NEW_STACK
 	memset(g_su3_sensor, 0, sizeof(g_su3_sensor));
 #endif
@@ -277,16 +300,34 @@ void config_store_to_flash(void)
 		}
 		len = sizeof(out_value);
 
-		/* 左右各一份最新报告进度；device_info->report 镜像左路供 deviceCli */
+		/* 左右报告头从 NVS 读出并打印；补传/回写在后续业务。device_info->report 镜像左路 */
 		len = sizeof(out_value);
 		memset(out_value, 0, sizeof(out_value));
 		err = nvs_get_str(nvs_config_handler, "report_L", out_value, &len);
 		if (err == ESP_OK && out_value[0] != '\0') {
-			memcpy(device_info->report, out_value, len < sizeof(device_info->report) ? len : sizeof(device_info->report) - 1);
+			memcpy(device_info->report, out_value,
+			       len < sizeof(device_info->report) ? len : sizeof(device_info->report) - 1);
 		} else {
 			memcpy(device_info->report, "NONE", 5);
 		}
-		ESP_LOGI(TAG, "report_L= %s", device_info->report); 
+		ESP_LOGI(TAG, "report_L= %s", device_info->report);
+
+		len = sizeof(out_value);
+		memset(out_value, 0, sizeof(out_value));
+		err = nvs_get_str(nvs_config_handler, "report_R", out_value, &len);
+		ESP_LOGI(TAG, "report_R= %s",
+		         (err == ESP_OK && out_value[0] != '\0') ? out_value : "NONE");
+
+		len = sizeof(out_value);
+		memset(out_value, 0, sizeof(out_value));
+		memset(device_info->sensor_ver, 0, sizeof(device_info->sensor_ver));
+		err = nvs_get_str(nvs_config_handler, "sensor_ver", out_value, &len);
+		if (err == ESP_OK && out_value[0] != '\0') {
+			strncpy(device_info->sensor_ver, out_value, sizeof(device_info->sensor_ver) - 1U);
+		}
+		ESP_LOGI(TAG, "sensor_ver= %s",
+		         device_info->sensor_ver[0] ? device_info->sensor_ver : "(empty)");
+
 		printf("snore: up_hold_time_s = %d, threshold_5s = %d, threshold = %d, pwm = %d, tmr = %d\n",
 																									device_info->snore->snore_parameters.up_hold_time_s,
 																									device_info->snore->snore_parameters.threshold_5s,
@@ -324,6 +365,8 @@ void config_store_to_flash(void)
 		ESP_ERROR_CHECK(nvs_set_str(nvs_config_handler, "report_L", "NONE"));
 		ESP_ERROR_CHECK(nvs_set_str(nvs_config_handler, "report_R", "NONE"));
 		memcpy(device_info->report, "NONE", 5);
+		ESP_ERROR_CHECK(nvs_set_str(nvs_config_handler, "sensor_ver", ""));
+		memset(device_info->sensor_ver, 0, sizeof(device_info->sensor_ver));
 		ESP_ERROR_CHECK(nvs_set_str(nvs_config_handler, "configFlag", "config_1bc"));
 		printf("nvs config update ok. \n");
 	}
@@ -352,22 +395,61 @@ static void led_init(void)
 	gpio_set_level(LED_RED, 0);
 }
 
-/** 上电默认打开 SU3 传感器供电（GPIO12 高电平） */
+/**
+ * SU3 供电：先关后开，强制传感器冷启动。
+ * 板端 OTA/软重启时若只拉高 EN、不断电，传感器常不重发 hello、无 1s/60s，
+ * CLI(set mode4/rtc) 全超时 → setup 卡死；用户又不会整床重新上电。
+ */
 static void su3_pwr_en_init(void)
 {
 	gpio_config_t io = {
 		.pin_bit_mask = (1ULL << SU3_PWR_EN_GPIO),
-		.mode = GPIO_MODE_OUTPUT,
+		/* INPUT_OUTPUT：输出供电使能的同时允许 gpio_get_level 读 pad。
+		 * 纯 OUTPUT 时 ESP32 关闭输入通路，gpio_get_level 恒为 0，
+		 * 导致 su3GpioQuery 在实际已拉高时仍回报 low。 */
+		.mode = GPIO_MODE_INPUT_OUTPUT,
 		.pull_up_en = GPIO_PULLUP_DISABLE,
 		.pull_down_en = GPIO_PULLDOWN_DISABLE,
 		.intr_type = GPIO_INTR_DISABLE,
 	};
 	gpio_config(&io);
+	/* 先断电再上电，保证 ESP 重启（含 OTA）时 SU3 跟着重启 */
+	su3_pwr_cycle();
+	/* 错峰：等传感器上电电流回落后再启 BLE/WiFi，减轻 brownout（过短易整机重启） */
+	vTaskDelay(pdMS_TO_TICKS(10000));
+	ESP_LOGI(TAG, "SU3 power settle 10000ms done");
+}
+
+void su3_pwr_off(void)
+{
+	gpio_set_level(SU3_PWR_EN_GPIO, 0);
+	ESP_LOGI(TAG, "SU3 power GPIO%d = 0 (off)", SU3_PWR_EN_GPIO);
+}
+
+void su3_pwr_on(void)
+{
 	gpio_set_level(SU3_PWR_EN_GPIO, 1);
-	ESP_LOGI(TAG, "SU3 power EN GPIO%d = 1", SU3_PWR_EN_GPIO);
-	/* 错峰：等传感器上电电流回落后再启 BLE/WiFi，减轻 brownout */
-	vTaskDelay(pdMS_TO_TICKS(10000)); /// 感觉硬件问题，20s太长了，后面可以改短点，2s会一直重启
-	ESP_LOGI(TAG, "SU3 power settle 2000ms done");
+	ESP_LOGI(TAG, "SU3 power GPIO%d = 1 (on)", SU3_PWR_EN_GPIO);
+}
+
+void su3_pwr_gpio_query(char *out, size_t out_len)
+{
+	int lv;
+
+	if (out == NULL || out_len == 0) {
+		return;
+	}
+	lv = gpio_get_level(SU3_PWR_EN_GPIO);
+	snprintf(out, out_len, "%s", lv ? "high" : "low");
+	ESP_LOGI(TAG, "SU3 power GPIO%d query = %d (%s)", SU3_PWR_EN_GPIO, lv,
+	         lv ? "high" : "low");
+}
+
+void su3_pwr_cycle(void)
+{
+	su3_pwr_off();
+	vTaskDelay(pdMS_TO_TICKS(SU3_PWR_CYCLE_OFF_MS));
+	su3_pwr_on();
 }
 
 void device_init(void)

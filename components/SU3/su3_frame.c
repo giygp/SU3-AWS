@@ -76,12 +76,25 @@ static void emit_pdu(su3_frame_ctx_t *ctx, uint8_t src, uint8_t dst,
 {
     su3_pdu_info_t info;
 
-    if (ctx->on_pdu == NULL || pdu == NULL || pdu_len < SU3_TOPIC_SIZE) {
+    if (ctx->on_pdu == NULL || pdu == NULL || pdu_len == 0) {
         return;
     }
 
     info.src_addr = src;
     info.dst_addr = dst;
+
+    /* port4：裸二进制 OTA（无 topic 字节），整段 PDU 交给上层 */
+    if (SU3_PORT_OF(src) == SU3_PORT_OTA || SU3_PORT_OF(dst) == SU3_PORT_OTA) {
+        info.topic = 0xFFU;
+        info.pb_data = pdu;
+        info.pb_len = pdu_len;
+        ctx->on_pdu(&info, ctx->user);
+        return;
+    }
+
+    if (pdu_len < SU3_TOPIC_SIZE) {
+        return;
+    }
     info.topic = pdu[0];
     info.pb_data = (pdu_len > SU3_TOPIC_SIZE) ? &pdu[SU3_TOPIC_SIZE] : NULL;
     info.pb_len = (pdu_len > SU3_TOPIC_SIZE) ? (size_t)(pdu_len - SU3_TOPIC_SIZE) : 0;

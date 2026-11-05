@@ -53,9 +53,13 @@ extern "C" {
  * 业务端口固定 0x3；左固定 0x33、右固定 0x36；ESP32 本机 0x37。
  */
 #define SU3_PORT_BIZ                0x03U
+#define SU3_PORT_OTA                0x04U /* 固件升级裸二进制端口（非 protobuf） */
 #define SU3_ADDR_PORT(addr, port)   ((uint8_t)((((port) & 0x0FU) << 4U) | ((addr) & 0x0FU)))
 #define SU3_ADDR_OF(ap)             ((uint8_t)((ap) & 0x0FU))
 #define SU3_PORT_OF(ap)             ((uint8_t)(((ap) >> 4U) & 0x0FU))
+/** 业务地址 ↔ 升级地址（0x33→0x43，0x37→0x47） */
+#define SU3_ADDR_TO_OTA(ap)         SU3_ADDR_PORT(SU3_ADDR_OF(ap), SU3_PORT_OTA)
+#define SU3_ADDR_TO_BIZ(ap)         SU3_ADDR_PORT(SU3_ADDR_OF(ap), SU3_PORT_BIZ)
 
 #define SU3_ADDR_ESP32_DEFAULT      SU3_ADDR_PORT(0x07U, SU3_PORT_BIZ) /* 0x37 */
 #define SU3_ADDR_LEFT_DEFAULT       SU3_ADDR_PORT(0x03U, SU3_PORT_BIZ) /* 0x33 */

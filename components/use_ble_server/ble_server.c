@@ -1,8 +1,9 @@
 /*
  * @Author: fzh
  * @Date: 2026-07-14 18:19:35
- * @LastEditors: fzh 
- * @LastEditTime: 2026-07-14 18:19:35
+ * @LastEditors: fzh
+ * @LastEditTime: 2026-07-30
+ * @Description: BLE GATT Server，支持最多 BLE_CONN_MAX 路手机同时连接
  */
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -33,9 +34,6 @@ extern device_info_t *device_info;
 #define ESP_APP_ID 0x55
 #define SVC_INST_ID 0
 
-/* The max length of characteristic value. When the GATT client performs a write or prepare write operation,
-*  the data length must be less than GATTS_DEMO_CHAR_VAL_LEN_MAX. 
-*/
 #define GATTS_DEMO_CHAR_VAL_LEN_MAX 500
 #define PREPARE_BUF_MAX_SIZE 1024
 #define CHAR_DECLARATION_SIZE (sizeof(uint8_t))
@@ -49,7 +47,6 @@ uint16_t heart_rate_handle_table[HRS_IDX_NB];
 
 static uint8_t service_uuid[16] = {
     /* LSB <--------------------------------------------------------------------------------> MSB */
-    //first uuid, 16bit, [12],[13] is the value
     0x03,
     0x00,
     0x13,
@@ -68,16 +65,15 @@ static uint8_t service_uuid[16] = {
     0x31,
 };
 
-/* The length of adv data must be less than 31 bytes */
 static esp_ble_adv_data_t adv_data = {
     .set_scan_rsp = false,
     .include_name = true,
     .include_txpower = true,
-    .min_interval = 0x0006, //slave connection min interval, Time = min_interval * 1.25 msec
-    .max_interval = 0x0010, //slave connection max interval, Time = max_interval * 1.25 msec
+    .min_interval = 0x0006,
+    .max_interval = 0x0010,
     .appearance = 0x00,
-    .manufacturer_len = 0,       //TEST_MANUFACTURER_DATA_LEN,
-    .p_manufacturer_data = NULL, //test_manufacturer,
+    .manufacturer_len = 0,
+    .p_manufacturer_data = NULL,
     .service_data_len = 0,
     .p_service_data = NULL,
     .service_uuid_len = sizeof(service_uuid),
@@ -85,16 +81,13 @@ static esp_ble_adv_data_t adv_data = {
     .flag = (ESP_BLE_ADV_FLAG_GEN_DISC | ESP_BLE_ADV_FLAG_BREDR_NOT_SPT),
 };
 
-// scan response data
 static esp_ble_adv_data_t scan_rsp_data = {
     .set_scan_rsp = true,
     .include_name = true,
     .include_txpower = true,
-    //.min_interval = 0x0006,     // 这两个可以不用填写
-    //.max_interval = 0x0010,
     .appearance = 0x00,
-    .manufacturer_len = 0,       //TEST_MANUFACTURER_DATA_LEN,
-    .p_manufacturer_data = NULL, //&test_manufacturer[0],
+    .manufacturer_len = 0,
+    .p_manufacturer_data = NULL,
     .service_data_len = 0,
     .p_service_data = NULL,
     .service_uuid_len = sizeof(service_uuid),
@@ -130,15 +123,13 @@ struct gatts_profile_inst
 static void gatts_profile_event_handler(esp_gatts_cb_event_t event,
                                         esp_gatt_if_t gatts_if, esp_ble_gatts_cb_param_t *param);
 
-/* One gatt-based profile one app_id and one gatts_if, this array will store the gatts_if returned by ESP_GATTS_REG_EVT */
 static struct gatts_profile_inst heart_rate_profile_tab[PROFILE_NUM] = {
     [PROFILE_APP_IDX] = {
         .gatts_cb = gatts_profile_event_handler,
-        .gatts_if = ESP_GATT_IF_NONE, /* Not get the gatt_if, so initial is ESP_GATT_IF_NONE */
+        .gatts_if = ESP_GATT_IF_NONE,
     },
 };
 
-/* Service */
 static const uint16_t GATTS_SERVICE_UUID_TEST = 0x00EE;
 static const uint16_t GATTS_CHAR_UUID_TEST_A = 0xFF02;
 static const uint16_t GATTS_CHAR_UUID_TEST_B = 0xFF03;
@@ -150,46 +141,170 @@ static const uint16_t character_client_config_uuid = ESP_GATT_UUID_CHAR_CLIENT_C
 static const uint8_t char_prop_read = ESP_GATT_CHAR_PROP_BIT_READ;
 static const uint8_t char_prop_write = ESP_GATT_CHAR_PROP_BIT_WRITE;
 static const uint8_t char_prop_read_write_notify = ESP_GATT_CHAR_PROP_BIT_WRITE | ESP_GATT_CHAR_PROP_BIT_READ | ESP_GATT_CHAR_PROP_BIT_NOTIFY;
-//static const uint8_t char_prop_read_write_notify   = ESP_GATT_CHAR_PROP_BIT_WRITE | ESP_GATT_CHAR_PROP_BIT_READ;
 static const uint8_t heart_measurement_ccc[2] = {0x00, 0x00};
 uint8_t char_value[4] = {0x11, 0x12, 0x13, 0x14};
 
-/* Full Database Description - Used to add attributes into the database */
 static const esp_gatts_attr_db_t gatt_db[HRS_IDX_NB] =
     {
-        // Service Declarationf
         [IDX_SVC] =
             {{ESP_GATT_AUTO_RSP}, {ESP_UUID_LEN_16, (uint8_t *)&primary_service_uuid, ESP_GATT_PERM_READ, sizeof(uint16_t), sizeof(GATTS_SERVICE_UUID_TEST), (uint8_t *)&GATTS_SERVICE_UUID_TEST}},
 
-        /* Characteristic Declaration */
         [IDX_CHAR_A] =
             {{ESP_GATT_AUTO_RSP}, {ESP_UUID_LEN_16, (uint8_t *)&character_declaration_uuid, ESP_GATT_PERM_READ, CHAR_DECLARATION_SIZE, CHAR_DECLARATION_SIZE, (uint8_t *)&char_prop_read_write_notify}},
 
-        /* Characteristic Value */
         [IDX_CHAR_VAL_A] =
             {{ESP_GATT_AUTO_RSP}, {ESP_UUID_LEN_16, (uint8_t *)&GATTS_CHAR_UUID_TEST_A, ESP_GATT_PERM_READ | ESP_GATT_PERM_WRITE, GATTS_DEMO_CHAR_VAL_LEN_MAX, sizeof(char_value), (uint8_t *)char_value}},
 
-        /* Client Characteristic Configuration Descriptor */
         [IDX_CHAR_CFG_A] =
             {{ESP_GATT_AUTO_RSP}, {ESP_UUID_LEN_16, (uint8_t *)&character_client_config_uuid, ESP_GATT_PERM_READ | ESP_GATT_PERM_WRITE, sizeof(uint16_t), sizeof(heart_measurement_ccc), (uint8_t *)heart_measurement_ccc}},
 
-        /* Characteristic Declaration */
         [IDX_CHAR_B] =
             {{ESP_GATT_AUTO_RSP}, {ESP_UUID_LEN_16, (uint8_t *)&character_declaration_uuid, ESP_GATT_PERM_READ, CHAR_DECLARATION_SIZE, CHAR_DECLARATION_SIZE, (uint8_t *)&char_prop_read}},
 
-        /* Characteristic Value */
         [IDX_CHAR_VAL_B] =
             {{ESP_GATT_AUTO_RSP}, {ESP_UUID_LEN_16, (uint8_t *)&GATTS_CHAR_UUID_TEST_B, ESP_GATT_PERM_READ | ESP_GATT_PERM_WRITE, GATTS_DEMO_CHAR_VAL_LEN_MAX, sizeof(char_value), (uint8_t *)char_value}},
 
-        /* Characteristic Declaration */
         [IDX_CHAR_C] =
             {{ESP_GATT_AUTO_RSP}, {ESP_UUID_LEN_16, (uint8_t *)&character_declaration_uuid, ESP_GATT_PERM_READ, CHAR_DECLARATION_SIZE, CHAR_DECLARATION_SIZE, (uint8_t *)&char_prop_write}},
 
-        /* Characteristic Value */
         [IDX_CHAR_VAL_C] =
             {{ESP_GATT_AUTO_RSP}, {ESP_UUID_LEN_16, (uint8_t *)&GATTS_CHAR_UUID_TEST_C, ESP_GATT_PERM_READ | ESP_GATT_PERM_WRITE, GATTS_DEMO_CHAR_VAL_LEN_MAX, sizeof(char_value), (uint8_t *)char_value}},
 
 };
+
+/* ---------- 多连接表 ---------- */
+
+static void ble_conn_recount(void)
+{
+    int i;
+    uint8_t n = 0;
+    if (device_info == NULL || device_info->ble == NULL) {
+        return;
+    }
+    for (i = 0; i < BLE_CONN_MAX; i++) {
+        if (device_info->ble->conns[i].in_use) {
+            n++;
+        }
+    }
+    device_info->ble->conn_count = n;
+}
+
+static int ble_conn_find(uint16_t conn_id)
+{
+    int i;
+    if (device_info == NULL || device_info->ble == NULL) {
+        return -1;
+    }
+    for (i = 0; i < BLE_CONN_MAX; i++) {
+        if (device_info->ble->conns[i].in_use &&
+            device_info->ble->conns[i].conn_id == conn_id) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+static int ble_conn_add(uint16_t conn_id)
+{
+    int i;
+    if (device_info == NULL || device_info->ble == NULL) {
+        return -1;
+    }
+    i = ble_conn_find(conn_id);
+    if (i >= 0) {
+        ble_conn_recount();
+        return i;
+    }
+    for (i = 0; i < BLE_CONN_MAX; i++) {
+        if (!device_info->ble->conns[i].in_use) {
+            device_info->ble->conns[i].in_use = true;
+            device_info->ble->conns[i].conn_id = conn_id;
+            /* 兼容旧 App：连上即允许 Notify，CCCD 写入后再精确更新 */
+            device_info->ble->conns[i].notify_en = true;
+            ble_conn_recount();
+            return i;
+        }
+    }
+    ble_conn_recount();
+    return -1;
+}
+
+static void ble_conn_remove(uint16_t conn_id)
+{
+    int i = ble_conn_find(conn_id);
+    if (i < 0 || device_info == NULL || device_info->ble == NULL) {
+        ESP_LOGW(GATTS_TABLE_TAG, "remove miss conn_id=%u", conn_id);
+        ble_conn_recount();
+        return;
+    }
+    device_info->ble->conns[i].in_use = false;
+    device_info->ble->conns[i].conn_id = 0;
+    device_info->ble->conns[i].notify_en = false;
+    ble_conn_recount();
+}
+
+static void ble_conn_set_notify(uint16_t conn_id, bool en)
+{
+    int i = ble_conn_find(conn_id);
+    if (i >= 0) {
+        device_info->ble->conns[i].notify_en = en;
+    }
+}
+
+static void ble_try_restart_adv(void)
+{
+    if (device_info == NULL || device_info->ble == NULL) {
+        return;
+    }
+    if (device_info->ble->conn_count < BLE_CONN_MAX) {
+        esp_err_t ret = esp_ble_gap_start_advertising(&adv_params);
+        if (ret != ESP_OK) {
+            ESP_LOGW(GATTS_TABLE_TAG, "restart adv failed: %s", esp_err_to_name(ret));
+        }
+    } else {
+        (void)esp_ble_gap_stop_advertising();
+    }
+}
+
+uint8_t ble_conn_count(void)
+{
+    if (device_info == NULL || device_info->ble == NULL) {
+        return 0;
+    }
+    return device_info->ble->conn_count;
+}
+
+esp_err_t ble_notify_send(const uint8_t *data, uint16_t len)
+{
+    int i;
+    esp_err_t last = ESP_ERR_INVALID_STATE;
+    int sent = 0;
+
+    if (data == NULL || len == 0 || device_info == NULL || device_info->ble == NULL) {
+        return ESP_ERR_INVALID_ARG;
+    }
+    if (device_info->ble->conn_count == 0 || !device_info->ble->flag) {
+        return ESP_ERR_INVALID_STATE;
+    }
+
+    for (i = 0; i < BLE_CONN_MAX; i++) {
+        ble_conn_t *c = &device_info->ble->conns[i];
+        if (!c->in_use || !c->notify_en) {
+            continue;
+        }
+        last = esp_ble_gatts_send_indicate(device_info->ble->gatts_if,
+                                          c->conn_id,
+                                          device_info->ble->handle,
+                                          len, (uint8_t *)data, false);
+        if (last == ESP_OK) {
+            sent++;
+        } else {
+            ESP_LOGW(GATTS_TABLE_TAG, "notify fail conn_id=%u: %s",
+                     c->conn_id, esp_err_to_name(last));
+        }
+    }
+    return (sent > 0) ? ESP_OK : last;
+}
 
 static void gap_event_handler(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param)
 {
@@ -200,7 +315,9 @@ static void gap_event_handler(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param
         if (adv_config_done == 0)
         {
             esp_err_t ret = esp_ble_gap_start_advertising(&adv_params);
-            if (ret != ESP_OK) {ESP_LOGE(GATTS_TABLE_TAG, "ESP_GAP_BLE_ADV_DATA_SET_COMPLETE_EVT : Failed to start advertising: %d", ret);}
+            if (ret != ESP_OK) {
+                ESP_LOGE(GATTS_TABLE_TAG, "ADV_DATA_SET start adv fail: %d", ret);
+            }
         }
         break;
     case ESP_GAP_BLE_SCAN_RSP_DATA_SET_COMPLETE_EVT:
@@ -208,59 +325,55 @@ static void gap_event_handler(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param
         if (adv_config_done == 0)
         {
             esp_err_t ret = esp_ble_gap_start_advertising(&adv_params);
-                if (ret != ESP_OK) {ESP_LOGE(GATTS_TABLE_TAG, "ESP_GAP_BLE_SCAN_RSP_DATA_SET_COMPLETE_EVT : Failed to start advertising: %d", ret);}
+            if (ret != ESP_OK) {
+                ESP_LOGE(GATTS_TABLE_TAG, "SCAN_RSP start adv fail: %d", ret);
+            }
         }
         break;
 
     case ESP_GAP_BLE_ADV_START_COMPLETE_EVT:
-        /* advertising start complete event to indicate advertising start successfully or failed */
-        if (param->adv_start_cmpl.status != ESP_BT_STATUS_SUCCESS)
-        {
+        if (param->adv_start_cmpl.status != ESP_BT_STATUS_SUCCESS) {
             ESP_LOGE(GATTS_TABLE_TAG, "advertising start failed");
-        }
-        else
-        {
-            ESP_LOGI(GATTS_TABLE_TAG, "advertising start successfully");
         }
         break;
     case ESP_GAP_BLE_ADV_STOP_COMPLETE_EVT:
-        if (param->adv_stop_cmpl.status != ESP_BT_STATUS_SUCCESS)
-        {
+        if (param->adv_stop_cmpl.status != ESP_BT_STATUS_SUCCESS) {
             ESP_LOGE(GATTS_TABLE_TAG, "Advertising stop failed");
         }
-        else
-        {
-            ESP_LOGI(GATTS_TABLE_TAG, "Stop adv successfully\n");
-        }
+        break;
+
+    case ESP_GAP_BLE_UPDATE_CONN_PARAMS_EVT:
         break;
 
     case ESP_GAP_BLE_SET_LOCAL_PRIVACY_COMPLETE_EVT:
         if (param->local_privacy_cmpl.status != ESP_BT_STATUS_SUCCESS)
         {
-            ESP_LOGE(GATTS_TABLE_TAG, "config local privacy failed, error status = %x", param->local_privacy_cmpl.status);
+            ESP_LOGE(GATTS_TABLE_TAG, "config local privacy failed, error status = %x",
+                     param->local_privacy_cmpl.status);
             break;
         }
 
-        esp_err_t ret = esp_ble_gap_config_adv_data(&adv_data);
-        if (ret)
         {
-            ESP_LOGE(GATTS_TABLE_TAG, "config adv data failed, error code = %x", ret);
-        }
-        else
-        {
-            adv_config_done |= ADV_CONFIG_FLAG;
-        }
+            esp_err_t ret = esp_ble_gap_config_adv_data(&adv_data);
+            if (ret)
+            {
+                ESP_LOGE(GATTS_TABLE_TAG, "config adv data failed, error code = %x", ret);
+            }
+            else
+            {
+                adv_config_done |= ADV_CONFIG_FLAG;
+            }
 
-        ret = esp_ble_gap_config_adv_data(&scan_rsp_data);
-        if (ret)
-        {
-            ESP_LOGE(GATTS_TABLE_TAG, "config adv data failed, error code = %x", ret);
+            ret = esp_ble_gap_config_adv_data(&scan_rsp_data);
+            if (ret)
+            {
+                ESP_LOGE(GATTS_TABLE_TAG, "config scan rsp failed, error code = %x", ret);
+            }
+            else
+            {
+                adv_config_done |= SCAN_RSP_CONFIG_FLAG;
+            }
         }
-        else
-        {
-            adv_config_done |= SCAN_RSP_CONFIG_FLAG;
-        }
-
         break;
     default:
         break;
@@ -270,34 +383,41 @@ static void gap_event_handler(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param
 static void gatts_profile_event_handler(esp_gatts_cb_event_t event,
                                         esp_gatt_if_t gatts_if, esp_ble_gatts_cb_param_t *param)
 {
-    device_info->ble->gatts_if = gatts_if;
-    device_info->ble->conn_id = param->write.conn_id;
-    device_info->ble->handle = heart_rate_handle_table[IDX_CHAR_VAL_A]; //param->write.handle;   //heart_rate_handle_table[IDX_CHAR_VAL_A];
     switch (event)
     {
     case ESP_GATTS_REG_EVT:
+        device_info->ble->gatts_if = gatts_if;
         esp_ble_gap_set_device_name(device_info->id);
-        //generate a resolvable random address
         esp_ble_gap_config_local_privacy(true);
-        esp_ble_gatts_create_attr_tab(gatt_db, gatts_if,
-                                      HRS_IDX_NB, SVC_INST_ID);
+        esp_ble_gatts_create_attr_tab(gatt_db, gatts_if, HRS_IDX_NB, SVC_INST_ID);
         break;
     case ESP_GATTS_READ_EVT:
-
         break;
     case ESP_GATTS_WRITE_EVT:
-        // ESP_LOGI(GATTS_TABLE_TAG, "ESP_GATTS_WRITE_EVT, write value:");
-        // esp_log_buffer_hex(GATTS_TABLE_TAG, param->write.value, param->write.len);
-        // printf("%s\n",param->write.value);
-        if (param->write.len > 0)
+        /* 业务下发：Char 0xFF04；Notify 上报：0xFF02 */
+        if (param->write.handle == heart_rate_handle_table[IDX_CHAR_CFG_A] &&
+            param->write.len >= 2)
         {
-            BaseType_t xStatus = xQueueSend(device_info->ble->xQueue, param->write.value, 0);
-            if (xStatus != pdPASS)
-            {
-                printf("Could not send to the queue.\r\n");
+            uint16_t cccd = param->write.value[0] | ((uint16_t)param->write.value[1] << 8);
+            ble_conn_set_notify(param->write.conn_id, (cccd & 0x0001) != 0);
+            break;
+        }
+        if (param->write.len > 0 &&
+            param->write.handle == heart_rate_handle_table[IDX_CHAR_VAL_C] &&
+            !param->write.is_prep)
+        {
+            uint8_t qbuf[512];
+            size_t copy_len = param->write.len;
+
+            if (copy_len >= sizeof(qbuf)) {
+                copy_len = sizeof(qbuf) - 1U;
+            }
+            memset(qbuf, 0, sizeof(qbuf));
+            memcpy(qbuf, param->write.value, copy_len);
+            if (xQueueSend(device_info->ble->xQueue, qbuf, 0) != pdPASS) {
+                ESP_LOGW(GATTS_TABLE_TAG, "BLE RX queue full");
             }
         }
-
         break;
     case ESP_GATTS_EXEC_WRITE_EVT:
         break;
@@ -314,14 +434,39 @@ static void gatts_profile_event_handler(esp_gatts_cb_event_t event,
     case ESP_GATTS_STOP_EVT:
         break;
     case ESP_GATTS_CONNECT_EVT:
-        ESP_LOGI(GATTS_TABLE_TAG, "ESP_GATTS_CONNECT_EVT");
+    {
+        int slot;
+        esp_ble_conn_update_params_t conn_params = {0};
+
+        slot = ble_conn_add(param->connect.conn_id);
+        if (slot < 0) {
+            ESP_LOGW(GATTS_TABLE_TAG, "conn full, reject conn_id=%u",
+                     param->connect.conn_id);
+            esp_ble_gap_disconnect(param->connect.remote_bda);
+            break;
+        }
+        ESP_LOGI(GATTS_TABLE_TAG, "CONNECT conn_id=%u count=%u",
+                 param->connect.conn_id, device_info->ble->conn_count);
         set_ble_status(1);
+        device_info->ble->gatts_if = gatts_if;
+
+        memcpy(conn_params.bda, param->connect.remote_bda, sizeof(esp_bd_addr_t));
+        conn_params.latency = 0;
+        conn_params.max_int = 0x20;  /* 40ms */
+        conn_params.min_int = 0x10;  /* 20ms */
+        conn_params.timeout = 400;   /* 4s */
+        esp_ble_gap_update_conn_params(&conn_params);
+
+        ble_try_restart_adv();
         break;
+    }
     case ESP_GATTS_DISCONNECT_EVT:
-        /* start advertising again when missing the connect */
-        ESP_LOGI(GATTS_TABLE_TAG, "ESP_GATTS_DISCONNECT_EVT");
-        esp_ble_gap_start_advertising(&adv_params);
-        set_ble_status(0);
+        ble_conn_remove(param->disconnect.conn_id);
+        ESP_LOGI(GATTS_TABLE_TAG, "DISCONNECT conn_id=%u reason=0x%x count=%u",
+                 param->disconnect.conn_id, param->disconnect.reason,
+                 device_info->ble->conn_count);
+        set_ble_status(device_info->ble->conn_count > 0 ? 1 : 0);
+        ble_try_restart_adv();
         break;
     case ESP_GATTS_OPEN_EVT:
         break;
@@ -335,24 +480,26 @@ static void gatts_profile_event_handler(esp_gatts_cb_event_t event,
         break;
     case ESP_GATTS_CREAT_ATTR_TAB_EVT:
     {
-        ESP_LOGI(GATTS_TABLE_TAG, "The number handle = %x", param->add_attr_tab.num_handle);
         if (param->create.status == ESP_GATT_OK)
         {
             if (param->add_attr_tab.num_handle == HRS_IDX_NB)
             {
                 memcpy(heart_rate_handle_table, param->add_attr_tab.handles,
                        sizeof(heart_rate_handle_table));
+                device_info->ble->handle = heart_rate_handle_table[IDX_CHAR_VAL_A];
                 esp_ble_gatts_start_service(heart_rate_handle_table[IDX_SVC]);
             }
             else
             {
-                ESP_LOGE(GATTS_TABLE_TAG, "Create attribute table abnormally, num_handle (%d) doesn't equal to HRS_IDX_NB(%d)",
+                ESP_LOGE(GATTS_TABLE_TAG,
+                         "Create attribute table abnormally, num_handle (%d) != HRS_IDX_NB(%d)",
                          param->add_attr_tab.num_handle, HRS_IDX_NB);
             }
         }
         else
         {
-            ESP_LOGE(GATTS_TABLE_TAG, " Create attribute table failed, error code = %x", param->create.status);
+            ESP_LOGE(GATTS_TABLE_TAG, " Create attribute table failed, error code = %x",
+                     param->create.status);
         }
         break;
     }
@@ -361,10 +508,9 @@ static void gatts_profile_event_handler(esp_gatts_cb_event_t event,
     }
 }
 
-static void gatts_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_if, esp_ble_gatts_cb_param_t *param)
+static void gatts_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_if,
+                               esp_ble_gatts_cb_param_t *param)
 {
-
-    /* If event is register event, store the gatts_if for each profile */
     if (event == ESP_GATTS_REG_EVT)
     {
         if (param->reg.status == ESP_GATT_OK)
@@ -374,8 +520,7 @@ static void gatts_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_
         else
         {
             ESP_LOGE(GATTS_TABLE_TAG, "reg app failed, app_id %04x, status %d",
-                     param->reg.app_id,
-                     param->reg.status);
+                     param->reg.app_id, param->reg.status);
             return;
         }
     }
@@ -384,8 +529,8 @@ static void gatts_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_
         int idx;
         for (idx = 0; idx < PROFILE_NUM; idx++)
         {
-            /* ESP_GATT_IF_NONE, not specify a certain gatt_if, need to call every profile cb function */
-            if (gatts_if == ESP_GATT_IF_NONE || gatts_if == heart_rate_profile_tab[idx].gatts_if)
+            if (gatts_if == ESP_GATT_IF_NONE ||
+                gatts_if == heart_rate_profile_tab[idx].gatts_if)
             {
                 if (heart_rate_profile_tab[idx].gatts_cb)
                 {
@@ -454,5 +599,4 @@ void initialize_ble_server(void)
     {
         ESP_LOGE(GATTS_TABLE_TAG, "set local  MTU failed, error code = %x", local_mtu_ret);
     }
-
 }

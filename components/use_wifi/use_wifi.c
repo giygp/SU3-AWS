@@ -58,6 +58,7 @@
 // topic
 
 char ota_infor_publish_topic[64] = {0};     // 缩减为64
+char ota_progress_publish_topic[64] = {0};  /* /ota/device/progress/... */
 char user_5s_data_publish_topic[64] = {0};
 char user_60s_data_publish_topic[64] = {0};
 char user_sa_data_publish_topic[64] = {0};
@@ -128,15 +129,23 @@ wifi_config_t wifi_config = {
 /* 获 IP 后立即 SNTP（IP 直连，避免 DNS 延迟）；同步成功回调里启动 MQTT */
 static void on_sntp_synced(struct timeval *tv)
 {
+    time_t now_ts;
+
     (void)tv;
     if (device_info != NULL) {
         device_info->utc.flag = true;
+        /* 与 utc_get_task 解耦：SNTP 一成功就写入 TS，避免上报窗口读到 0 */
+        now_ts = time(NULL);
+        if (now_ts > 0) {
+            device_info->utc.time_stamp = (uint32_t)now_ts;
+        }
     }
     if (!s_mqtt_started_after_sntp) {
         s_mqtt_started_after_sntp = 1;
         use_wifi_mqtt_init_and_start_after_time_sync();
     }
-    ESP_LOGI(TAG, "SNTP sync ok, MQTT init triggered");
+    ESP_LOGI(TAG, "SNTP sync ok, ts=%lu, MQTT init triggered",
+             (unsigned long)(device_info ? device_info->utc.time_stamp : 0));
 }
 
 static void start_sntp_once(void)
@@ -171,6 +180,9 @@ static void mqtt_handle_ota_upgrade_payload(const char *payload)
     cJSON *data_obj = NULL;
     cJSON *ver_item = NULL;
     cJSON *url_item = NULL;
+    cJSON *mod_item = NULL;
+    char module[24] = {0};
+    bool is_sensor;
 
     if (payload == NULL || payload[0] == '\0') {
         ESP_LOGE(TAG, "OTA upgrade payload empty");
@@ -208,10 +220,34 @@ static void mqtt_handle_ota_upgrade_payload(const char *payload)
     memset(device_info->ota.url, 0, sizeof(device_info->ota.url));
     strncpy(device_info->ota.url, url_item->valuestring, sizeof(device_info->ota.url) - 1);
 
-    ESP_LOGI(TAG, "OTA upgrade push: %s -> %s",
-             device_info->ota.running_version, device_info->ota.upgrade_version);
+    mod_item = cJSON_GetObjectItem(data_obj, "module");
+    if (mod_item != NULL && mod_item->valuestring != NULL && mod_item->valuestring[0] != '\0') {
+        strncpy(module, mod_item->valuestring, sizeof(module) - 1);
+    } else {
+        strncpy(module, "(none)", sizeof(module) - 1);
+    }
+
+    is_sensor = ota_upgrade_is_sensor_fw(device_info->ota.upgrade_version);
+    /* 不打印 running→target，避免把 ESP 版本和传感器包写成一次升级 */
+    ESP_LOGI(TAG, "OTA recv module=%s version=%s type=%s",
+             module, device_info->ota.upgrade_version,
+             is_sensor ? "sensor" : "esp");
+    ESP_LOGI(TAG, "OTA download url: %s", device_info->ota.url);
+    if (strncmp(device_info->ota.url, "https://", 8) == 0) {
+        ESP_LOGI(TAG, "OTA download transport=HTTPS (TLS)");
+    } else if (strncmp(device_info->ota.url, "http://", 7) == 0) {
+        ESP_LOGW(TAG, "OTA download transport=HTTP (no TLS)");
+    } else {
+        ESP_LOGW(TAG, "OTA download transport=unknown");
+    }
     cJSON_Delete(root);
-    ota_start();
+
+    /* SU2/SU3 传感器包：下载到 ESP，勿走板端 esp_https_ota（会 chip id 失败） */
+    if (is_sensor) {
+        sensor_ota_start();
+    } else {
+        ota_start();
+    }
 }
 
 //wifi操作函数
@@ -256,10 +292,8 @@ static void event_handler(void *arg, esp_event_base_t event_base,
         ESP_LOGI(TAG, "connected");
         set_wifi_status(WIFI_STATUS_CONNECTED);
         start_sntp_once();
-        /* 首次 MQTT 在 SNTP 回调 on_sntp_synced 中创建并 start；
-         * WiFi 重连后 client 已存在，此处恢复连接。
-         * OTA 下载期间 MQTT 已 stop，禁止此处 start，避免双 TLS。 */
-        if (client != NULL && get_ota_now_flag() == 0) {
+        /* 仅 HTTPS 下载 pause MQTT 时禁止 start；串口刷写阶段应允许重连 */
+        if (client != NULL && !ota_mqtt_is_paused()) {
             esp_err_t merr = esp_mqtt_client_start(client);
             if (merr != ESP_OK && merr != ESP_ERR_INVALID_STATE) {
                 ESP_LOGW(TAG, "esp_mqtt_client_start on GOT_IP: %s", esp_err_to_name(merr));
@@ -308,6 +342,7 @@ static void mqtt_event_handler(void *handler_args, esp_event_base_t base, int32_
     // 建立连接成功
     case MQTT_EVENT_CONNECTED:
         printf("MQTT_client cnnnect ok. \n");
+        log_heap_info("mqtt_connected");
         s_mqtt_retry_num = 0;
         if(get_one_key_config_wifi_status())
         {
@@ -331,6 +366,8 @@ static void mqtt_event_handler(void *handler_args, esp_event_base_t base, int32_
         
         sprintf(ota_upgrade_subscribe_topic,  "/ota/device/upgrade/%s/%s",device_info->aliyun.product_key, device_info->aliyun.device_id);
         sprintf(ota_infor_publish_topic,  "/ota/device/inform/%s/%s",device_info->aliyun.product_key, device_info->aliyun.device_id);
+        sprintf(ota_progress_publish_topic, "/ota/device/progress/%s/%s",
+                device_info->aliyun.product_key, device_info->aliyun.device_id);
 
         sprintf(mc_cli_data_subscribe_topic, "/%s/%s/user/cli/get", device_info->aliyun.product_key, device_info->aliyun.device_id);
         sprintf(mc_cli_data_publish_topic, "/%s/%s/user/mccli/put", device_info->aliyun.product_key, device_info->aliyun.device_id);
@@ -349,6 +386,8 @@ static void mqtt_event_handler(void *handler_args, esp_event_base_t base, int32_
                 device_info->ota.running_version);
         printf("%s\n",temp);
         esp_mqtt_client_publish(client, ota_infor_publish_topic, (char *)temp, strlen((char *)temp), 1, 0);
+        /* 传感器模块单独 inform（云端需有 module=sensor） */
+        sensor_ota_report_version_on_mqtt();
         if (device_info->ota.flag)
         {
             nvs_handle ota_handlel;
@@ -466,9 +505,14 @@ static void mqtt_event_handler(void *handler_args, esp_event_base_t base, int32_
                 if (idItem == NULL || idItem->valuestring == NULL ||
                     !su3_mqtt_id_belong(idItem->valuestring))
                 {
+                    printf("cli/get id reject: \"%s\" (device=%s)\n",
+                           (idItem && idItem->valuestring) ? idItem->valuestring : "null",
+                           device_info->id);
                     cJSON_Delete(firstItem);
-                    break;
+                    firstItem = NULL;
                 }
+                if (firstItem)
+                {
                 mqtt_id = idItem->valuestring;
 
                 if (typeItem && strstr(typeItem->valuestring, "sensorCli"))
@@ -503,16 +547,26 @@ static void mqtt_event_handler(void *handler_args, esp_event_base_t base, int32_
                 }
                 else if (typeItem && strstr(typeItem->valuestring, "deviceCli"))
                 {
+                    cmdItem = cJSON_GetObjectItem(firstItem, "cmd");
+                    ESP_LOGI(TAG, "deviceCli id=%s cmd=%s mqtt=%d",
+                             mqtt_id,
+                             (cmdItem && cmdItem->valuestring) ? cmdItem->valuestring : "null",
+                             get_mqtt_status());
                     /* deviceCli 仅基座 00 */
                     if (!(mqtt_id[7] == '0' && mqtt_id[8] == '0'))
                     {
                         printf("deviceCli id must be base 00\n");
+                        sprintf(temp,
+                                "{\"id\":\"%s\",\"ts\":%d,\"type\":\"deviceCli\","
+                                "\"cmd\":\"%s\",\"back\":\"id must be base 00\"}",
+                                device_info->id, device_info->utc.time_stamp,
+                                (cmdItem && cmdItem->valuestring) ? cmdItem->valuestring : "");
+                        printf("%s\n", temp);
+                        esp_mqtt_client_publish(client, user_cli_data_publish_topic,
+                                                (char *)temp, strlen((char *)temp), 0, 0);
                     }
-                    else
+                    else if(cmdItem && strstr(cmdItem->valuestring, "dataUpSwitch"))
                     {
-                        cmdItem = cJSON_GetObjectItem(firstItem, "cmd");
-                       if(cmdItem && strstr(cmdItem->valuestring, "dataUpSwitch"))
-                       {
                             device_info->data_up_switch = (cmdItem->valuestring[13] == '0')? 0:1;
 
                             nvs_handle nvs_config_handler;
@@ -527,9 +581,9 @@ static void mqtt_event_handler(void *handler_args, esp_event_base_t base, int32_
                                     cmdItem->valuestring);
                             printf("%s\n",temp);
                             esp_mqtt_client_publish(client, user_cli_data_publish_topic, (char *)temp, strlen((char *)temp), 0, 0);
-                       }
-                       else if (cmdItem && strstr(cmdItem->valuestring, "currentReport"))
-                       {
+                    }
+                    else if (cmdItem && strstr(cmdItem->valuestring, "currentReport"))
+                    {
                             sprintf(temp,
                                     "{\"id\":\"%s\",\"ts\":%d,\"type\":\"deviceCli\","
                                     "\"cmd\":\"%s\",\"back\":\"%s\"}",
@@ -537,9 +591,9 @@ static void mqtt_event_handler(void *handler_args, esp_event_base_t base, int32_
                                     cmdItem->valuestring, device_info->report);
                             printf("%s\n",temp);
                             esp_mqtt_client_publish(client, user_cli_data_publish_topic, (char *)temp, strlen((char *)temp), 0, 0);
-                       }
-                       else if (cmdItem && strstr(cmdItem->valuestring, "otaRollback"))
-                       {
+                    }
+                    else if (cmdItem && strstr(cmdItem->valuestring, "otaRollback"))
+                    {
                             char rollback_back[64] = {0};
                             ota_rollback_result_t rb_result = {0};
                             int slot = OTA_ROLLBACK_SLOT_OTHER;
@@ -572,7 +626,28 @@ static void mqtt_event_handler(void *handler_args, esp_event_base_t base, int32_
                             if (rerr == ESP_OK) {
                                 ota_rollback_restart();
                             }
-                       }
+                    }
+                    else if (cmdItem && cmdItem->valuestring)
+                    {
+                            char su3_cli_back[16];
+
+                            if (su3_device_cli_handle(cmdItem->valuestring,
+                                                      su3_cli_back, sizeof(su3_cli_back))) {
+                                sprintf(temp,
+                                        "{\"id\":\"%s\",\"ts\":%d,\"type\":\"deviceCli\","
+                                        "\"cmd\":\"%s\",\"back\":\"%s\"}",
+                                        device_info->id, device_info->utc.time_stamp,
+                                        cmdItem->valuestring, su3_cli_back);
+                            } else {
+                                sprintf(temp,
+                                        "{\"id\":\"%s\",\"ts\":%d,\"type\":\"deviceCli\","
+                                        "\"cmd\":\"%s\",\"back\":\"unknown cmd\"}",
+                                        device_info->id, device_info->utc.time_stamp,
+                                        cmdItem->valuestring);
+                            }
+                            printf("%s\n", temp);
+                            esp_mqtt_client_publish(client, user_cli_data_publish_topic,
+                                                    (char *)temp, strlen((char *)temp), 0, 0);
                     }
                 } else if(typeItem && strstr(typeItem->valuestring, "mcCli"))
                     {
@@ -610,7 +685,8 @@ static void mqtt_event_handler(void *handler_args, esp_event_base_t base, int32_
                             }
                         }
                     }
-                cJSON_Delete(firstItem);    
+                cJSON_Delete(firstItem);
+                }
             }
             else{
                 printf("cJSON_Parse wrong\n");

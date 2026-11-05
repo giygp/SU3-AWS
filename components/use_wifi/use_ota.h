@@ -9,8 +9,30 @@
 #ifndef USE_OTA_H_
 #define USE_OTA_H_
 
+#include <stddef.h>
+#include <stdint.h>
+#include <stdbool.h>
+#include "esp_err.h"
+
 void advanced_ota_example_task(void *pvParameter);
 void ota_start(void);
+
+/** 云端 version 是否为传感器固件（SU2/SU3），走下载落盘而非板端分区 OTA */
+bool ota_upgrade_is_sensor_fw(const char *version);
+/** 启动传感器固件：版本比对 → HTTPS 下载 → port4 串口刷写 → 写 sensor_ver */
+void sensor_ota_start(void);
+
+/**
+ * MQTT 连上时上报传感器当前版本（module=sensor）。
+ * 云端需在产品下创建同名 OTA 模块，传感器包挂到该模块。
+ */
+void sensor_ota_report_version_on_mqtt(void);
+
+bool sensor_ota_image_ready(void);
+const uint8_t *sensor_ota_image_data(void);
+size_t sensor_ota_image_len(void);
+const char *sensor_ota_image_version(void);
+void sensor_ota_image_free(void);
 
 /** 切换 boot 分区：0=ota_0，1=ota_1，-1=当前非运行槽（OTA 回退推荐） */
 #define OTA_ROLLBACK_SLOT_OTHER  (-1)
@@ -28,6 +50,8 @@ esp_err_t ota_rollback_to_partition(int slot, ota_rollback_result_t *result,
 void ota_rollback_restart(void);
 /** 上电打印当前运行分区、下次启动分区及镜像版本 */
 void ota_log_boot_partition_info(void);
+/** HTTPS 下载期间 MQTT 已 pause，GOT_IP 勿再 start（避免双 TLS） */
+bool ota_mqtt_is_paused(void);
 
 #define ca_root_cert "\
 -----BEGIN CERTIFICATE-----\n\
@@ -50,6 +74,30 @@ yj1hTdNGCbM+w6DjY1Ub8rrvrTnhQ7k4o+YviiY776BQVvnGCv04zcQLcFGUl5gE\n\
 AbEVtQwdpf5pLGkkeB6zpxxxYu7KyJesF12KwvhHhm4qxFYxldBniYUr+WymXUad\n\
 DKqC5JlR3XC321Y9YeRq4VzW9v493kHMB65jUr9TU/Qr6cf9tveCX4XSQRjbgbME\n\
 HMUfpIBvFSDJ3gyICh3WZlXi/EjJKSZp4A==\n\
+-----END CERTIFICATE-----\n\
+-----BEGIN CERTIFICATE-----\n\
+MIIEBTCCAu2gAwIBAgIUOiMDlRFu6/Snmcl3ajKz0WcXM5swDQYJKoZIhvcNAQEL\n\
+BQAwgZAxCzAJBgNVBAYTAkNOMREwDwYDVQQIDAhaaGVKaWFuZzEQMA4GA1UEBwwH\n\
+SmlhWGluZzEPMA0GA1UECgwGS2Vlc29uMQwwCgYDVQQLDANEJlIxGTAXBgNVBAMM\n\
+EGlvdC5zbWFydGJlZC5pbmsxIjAgBgkqhkiG9w0BCQEWE3NxbC5zb25nQGtlZXNv\n\
+bi5jb20wIBcNMjYwNjA4MDAyMzE3WhgPMjEyNjA1MTUwMDIzMTdaMIGQMQswCQYD\n\
+VQQGEwJDTjERMA8GA1UECAwIWmhlSmlhbmcxEDAOBgNVBAcMB0ppYVhpbmcxDzAN\n\
+BgNVBAoMBktlZXNvbjEMMAoGA1UECwwDRCZSMRkwFwYDVQQDDBBpb3Quc21hcnRi\n\
+ZWQuaW5rMSIwIAYJKoZIhvcNAQkBFhNzcWwuc29uZ0BrZWVzb24uY29tMIIBIjAN\n\
+BgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAicRN0yZQuG+m6DgivDWDa3O02xJf\n\
+oqE+ho0V1O8lrWahS42lrRKbLWQRyKaXfNseNQklJg+J2AueDt4oAfzAhQg3Pn1/\n\
+SufwwtujTLPpfXNqgBbm6tF9DlVL+ML66FdOFXcUCT3uRD599pPIP99u4dS02OsV\n\
+7O5drbn6GQTFWm26gjwLN12fOf0BgsjnQ1ugQ44YJR7kzIRny47kl3zzoLj2WMm2\n\
+0Mf3R0OuKXZ/WuUcxZSMwNMLMeToFIjoKFbB24w5vBv2YkduB/F6w2QzPFK9zAf4\n\
+wf4zn+UDbIHkD4WVbLwUG/d4xEECjpAYCP+qCB1DL8tbiZxjDF9svGr7dQIDAQAB\n\
+o1MwUTAdBgNVHQ4EFgQU8wf5AZDvjUrJIHsK9eZTJpu79bIwHwYDVR0jBBgwFoAU\n\
+8wf5AZDvjUrJIHsK9eZTJpu79bIwDwYDVR0TAQH/BAUwAwEB/zANBgkqhkiG9w0B\n\
+AQsFAAOCAQEAh33JCkUzAyiUMLhOKWQmhkso5T/n1WsShTL5saNI5E2+k5VvOUqU\n\
+o3s+IWc5Jg7biH05GyvXPk+laAkgP1ImsnTijNznzJRxJqGVOYSNViyfB1VxcdwS\n\
+0WH/qSk/ZZxPNcS1rlRloLVmtEwoQo/EHN0hndHE3qNnmQanokHSfuRRsTltjObf\n\
++kaU/ewFoAaRMe80hfNSqSBylR+euetT31YQ7dZZSf5qecOFEOPHauNOpsHGa7d4\n\
+Wv+4RO+c5jrfCXFMUdzPqUJpTuLCFWL9wH6xnBr4Aletklik+AJz56cTzB4jWDHa\n\
+CxXCO4hhMTdGsPU3m5KzWO+bq0mo1Gr+BQ==\n\
 -----END CERTIFICATE-----\n\
 " 
 #endif
