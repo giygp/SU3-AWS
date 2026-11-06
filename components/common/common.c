@@ -111,39 +111,42 @@ void log_heap_info(const char *where)
 		 (unsigned)free_spiram, (unsigned)largest_spiram);
 }
 
-static qs_settings_aliyun_t m_aliyun;
-
 static void read_aliyun_config(void)
 {
 	esp_partition_t *partition;
-	
+
+	/* AWS layout: device id (20 bytes) starts at offset 0 of the "storage"
+	 * partition. The legacy Tuya layout was 20(PK)+20(name)+50(secret). */
+	char dev_id[21] = {0};
+
 	partition = esp_partition_find_first(ESP_PARTITION_TYPE_DATA, ESP_PARTITION_SUBTYPE_ANY, "storage");
 
 	if(partition != NULL)
 	{
-		esp_partition_read(partition, 0, &m_aliyun, sizeof(qs_settings_aliyun_t));
-		memcpy(device_info->id, m_aliyun.device_name, strlen(m_aliyun.device_name));
-		//aliyun 参数配置
-		memcpy(device_info->aliyun.device_id, m_aliyun.device_name, strlen(m_aliyun.device_name));
-		memcpy(device_info->aliyun.product_key, m_aliyun.product_key, strlen(m_aliyun.product_key));
-		memcpy(device_info->aliyun.device_secret, m_aliyun.device_secret, strlen(m_aliyun.device_secret));
-
-		printf("Device Name: %s\n", m_aliyun.device_name);
-		printf("Product Key: %s\n", m_aliyun.product_key);
-		printf("Device Secret: %s\n", m_aliyun.device_secret);
-		printf("s11\n");
+		esp_err_t err = esp_partition_read(partition, 0, dev_id, sizeof(dev_id) - 1);
+		if (err == ESP_OK && dev_id[0] != '\0' && dev_id[0] != 0xFF)
+		{
+			memcpy(device_info->id, dev_id, strlen(dev_id));
+			memcpy(device_info->aliyun.device_id, dev_id, strlen(dev_id));
+			printf("Device Id(storage @0): %s\n", dev_id);
+			printf("s11\n");
+		}
+		else
+		{
+			/* partition exists but not burned yet -> use build-in default */
+			memcpy(device_info->id, DEVEICE_ID, strlen(DEVEICE_ID));
+			memcpy(device_info->aliyun.device_id, DEVEICE_ID, strlen(DEVEICE_ID));
+			printf("storage empty, use default Device Id\n");
+			printf("s22\n");
+		}
 	}else
 	{
 		//设备id设置
 		memcpy(device_info->id, DEVEICE_ID, strlen(DEVEICE_ID));
-		
-		//aliyun 参数配置
-		memcpy(device_info->aliyun.product_key, PRODUCT_KEY, strlen(PRODUCT_KEY));
-		memcpy(device_info->aliyun.device_secret, DEVEICE_SECRET, strlen(DEVEICE_SECRET));
 		memcpy(device_info->aliyun.device_id, DEVEICE_ID, strlen(DEVEICE_ID));	
 		printf("s22\n");	
 	}
-	printf("id:%s,key:%s,secret:%s \n",device_info->aliyun.device_id,device_info->aliyun.product_key,device_info->aliyun.device_secret);
+	printf("device id: %s \n", device_info->aliyun.device_id);
 }
 
 //设置默认参数
@@ -206,6 +209,9 @@ void param_config_init(void)
 	//默认wifi设置
 	memcpy(device_info->wifi.one_key_config.ssid, MY_WIFI_SSID, strlen(MY_WIFI_SSID));
 	memcpy(device_info->wifi.one_key_config.passwd, MY_WIFI_PASSWD, strlen(MY_WIFI_PASSWD));
+	// AWS IoT endpoint default; config_store_to_flash() overrides from NVS when present
+	memcpy(device_info->wifi.one_key_config.iot_addr, AWS_IOT_ENDPOINT_DEFAULT,
+	       strlen(AWS_IOT_ENDPOINT_DEFAULT));
 
 	//5s数据
 	user_5s_sensor_info = (qs_pb_msg_sensor_5sec_info *)malloc(sizeof(qs_pb_msg_sensor_5sec_info));
@@ -245,6 +251,20 @@ void config_store_to_flash(void)
 		len = sizeof(out_value);
 		ESP_ERROR_CHECK(nvs_get_str(nvs_config_handler, "wifiPasswd", out_value, &len));
 		memcpy(device_info->wifi.one_key_config.passwd, out_value, len);
+
+		len = sizeof(out_value);
+		memset(out_value, 0, sizeof(out_value));
+		esp_err_t addr_err = nvs_get_str(nvs_config_handler, "aws_url", out_value, &len);
+		if (addr_err == ESP_OK && out_value[0] != '\0') {
+			memset(device_info->wifi.one_key_config.iot_addr, 0, sizeof(device_info->wifi.one_key_config.iot_addr));
+			strncpy(device_info->wifi.one_key_config.iot_addr, out_value,
+			        sizeof(device_info->wifi.one_key_config.iot_addr) - 1U);
+		} else {
+			/* first boot after upgrade: persist the default AWS endpoint */
+			ESP_ERROR_CHECK(nvs_set_str(nvs_config_handler, "aws_url",
+			                            device_info->wifi.one_key_config.iot_addr));
+		}
+		ESP_LOGI(TAG, "aws_url= %s", device_info->wifi.one_key_config.iot_addr);
 
 		size_t snore_param_size = sizeof(snore_parameters_t);
         esp_err_t err = nvs_get_blob(nvs_config_handler, "snore_param",  &device_info->snore->snore_parameters, &snore_param_size);
@@ -342,6 +362,7 @@ void config_store_to_flash(void)
 		ESP_LOGI(TAG, "nvs config init now... \n");    //esp32 flash中不存在相应参数，将默认参数存入
 		ESP_ERROR_CHECK(nvs_set_str(nvs_config_handler, "wifiSsid", device_info->wifi.one_key_config.ssid));
 		ESP_ERROR_CHECK(nvs_set_str(nvs_config_handler, "wifiPasswd", device_info->wifi.one_key_config.passwd));
+		ESP_ERROR_CHECK(nvs_set_str(nvs_config_handler, "aws_url", device_info->wifi.one_key_config.iot_addr));
 
 
 		ESP_LOGI(TAG, "write default snore param to flash...");

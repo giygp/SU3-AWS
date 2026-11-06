@@ -50,5 +50,6 @@ void app_main(void)
   ESP_LOGI(TAG, "WiFi init Successfully");
   mfp_gpio_config();
   app_control_server();           //app通信控制系统
+  ota_launcher_init();            //常驻OTA启动器（开机建好，避免指令到达时无内存）
 
 }

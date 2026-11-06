@@ -17,10 +17,10 @@
 
 /*-----------传感器类型------------------------*/
 #define BLE_TEST                                   0
-/* 新产品联调：用下方宏三元组；量产烧录 storage 后再改回 1 */
+/* 1=设备ID从「storage」分区 offset 0 读取（产测烧录）；0=用下方 DEVEICE_ID 宏 */
 #define ALIYUN_BURN                                1
-/* ALIYUN_BURN=1：三元组来自 flash「storage」分区（产测烧录），与下方 PRODUCT_KEY 宏无关，易导致 MQTT「bad username or password」。
- * 迁移涂鸦 iot.smartbed.ink / 更正 ProductKey 期间改为 0，使用下方宏；量产烧录正确三元组到 storage 后再改回 1。 */
+/* ALIYUN_BURN=1：AWS 布局下 storage 分区 offset 0 起为 20 字节设备ID（NUL 结尾）。
+ * 旧涂鸦布局为 20(PK)+20(name)+50(secret)，若残留旧数据会把 PK 当设备ID读出，产测必须按新布局重烧。 */
 
 #define DATA_UP                                     1
 #define OTA_ON_OFF                                  1
@@ -33,9 +33,12 @@
 
 #define MY_WIFI_SSID                                "keeson-office"//"keeson-office"//"DS" // xmhdesktop
 #define MY_WIFI_PASSWD                              "Smartbed2025@"//"ksn88888"//"ds654321"  // 87632154
-/* 涂鸦新产品 DeviceName（基座 00）；左右业务 id 改第 8～9 位为 03/06 → KSSLBED03000001 / KSSLBED06000001 */
+/* AWS IoT Core default endpoint; persisted in NVS(config_cfg) key "aws_url",
+ * same lifecycle as wifiSsid/wifiPasswd; may be updated by App provisioning. */
+#define AWS_IOT_ENDPOINT_DEFAULT                     "airykrld1d7awu3.ats.iot.cn-north-1.amazonaws.com.cn"
+/* 默认设备ID（基座 00）；左右业务 id 改第 8～9 位为 03/06 → KSSLBED03000001 / KSSLBED06000001 */
 #define DEVEICE_ID                                  "KSSLBED00000001"
-/* 涂鸦 IoT ProductKey（控制台 ProductID） */
+/* 以下两项为旧涂鸦/阿里云三元组遗留宏，AWS x.509 鉴权不再使用，仅 ALIYUN_BURN=0 旧分支引用 */
 #define PRODUCT_KEY                                 "QuTVRApZSgFHJ3Vm"
 #define DEVEICE_SECRET                              "f44a9751040c5a4de9c89a6c7dfd00b0"
 /* OTA inform / 版本比较格式：SL_ESP_YYYY_A_B_C（A/B/C 为单位数字） */
@@ -169,6 +172,7 @@ typedef struct
     QueueHandle_t xQueue;
     char ssid[32];              //wifi名                                              
     char passwd[64];            //wifi密码
+    char iot_addr[128];         // AWS IoT endpoint, persisted together with ssid/passwd
 }one_key_config_wifi_info_t;
 
 typedef struct
@@ -211,6 +215,8 @@ typedef struct
 
 typedef struct
 {
+    /* 字段名沿用旧 aliyun 时代命名；AWS 下仅 device_id 有效（= client id），
+     * product_key/device_secret 已废弃不用 */
     char product_key[20];
     char device_id[20];
     char device_secret[50];

@@ -1,38 +1,93 @@
-# SU3_ESP32 — 盛和养老智能床垫 ESP32 固件（SU3）
+# SU3_ESP32 — 盛和养老智能床垫 ESP32 固件（AWS IoT 版）
 
-基于原 `ESP_BC` 演进的板端工程，面向 **SU3 / 双人床睡眠传感器** 通信重构：用独立组件 `components/su3` 替换旧的 `set_bc` + `pause_uart_task` 抢总线方式，保留 WiFi / BLE / MFP / MQTT / OTA 等业务能力。
+基于原 `ESP_BC` 演进的板端工程，面向 **SU3 / 双人床睡眠传感器**：用独立组件 `components/su3` 替换旧的 `set_bc` + `pause_uart_task` 抢总线方式，云端链路为 **AWS IoT Core（mTLS，8883 端口）**。
 
 | 项 | 内容 |
 |----|------|
 | 工程目录 | `SU3_ESP32` |
 | CMake 工程名 | `bochuang-program` |
-| 芯片 | ESP32 |
+| 芯片 | ESP32（16MB Flash） |
 | 框架 | ESP-IDF v4.4.x（当前联调：v4.4.8） |
-| 版本宏 | `SL_ESP_2026_1_0_0`（涂鸦新产品 KSSLBED） |
-| 基线标签 | `su3-bringup-20260716` |
+| 云平台 | AWS IoT Core（中国区 `cn-north-1`，ATS endpoint） |
+| 固件版本宏 | `SL_ESP_2026_1_1_3` |
 
 架构说明见 [`docs/SU2_通信架构.md`](docs/SU2_通信架构.md)（文档名沿用 SU2 协议族，实现目录为 `su3`）。
 
 ---
 
-## 当前进度（联调基线）
+## AWS IoT 连接
 
-### 已完成
+### 鉴权：x.509 双向 TLS
 
-- `components/su3`：帧层 / CRC / CliCommand / 单 RX 任务 / `cli_exec`·`list`·`fire`
-- 业务接入：`hello` → `set addr` → `set mode 4`；topic 回调与双路缓存骨架
-- 硬件：`GPIO12` 传感器电源使能（高电平上电），上电后延时 500ms 再启 BLE/WiFi
-- 实机验证：UART 收包稳定（`crc_fail=0`），hello / 设址应答 `ok`
+| 材料 | 存放位置 | 说明 |
+|------|----------|------|
+| Amazon Root CA 1（服务器 CA） | `nvs_certs` 分区 key `root_ca` | OTA HTTPS 下载同用此根证书（编译内置一份于 `use_ota.h`） |
+| 设备证书 | `nvs_certs` 分区 key `dev_cert` | 每台设备一张，产测烧录 |
+| 设备私钥 | `nvs_certs` 分区 key `dev_key` | 每台设备一把，产测烧录 |
 
-### 未完成 / 待验收
+- MQTT URI：`mqtts://<endpoint>:8883`，`client_id` = 设备ID。
+- 证书在连接建立时由 `aws_certs_load()` 从 `nvs_certs` NVS 分区读入（namespace `certs`）。
+- **SNTP 时间同步后才启动 MQTT**：x.509 校验依赖系统时间，时间不对 TLS 握手会失败。
 
-- 双路（左+右）实时数据上云稳定性验收
-- `list` / `report` 睡眠报告全流程验收
-- 云端 CLI 指定侧（`side` L/R）
-- 传感器固件 OTA（`su3_sensor_ota` 未实现）
-- 供电 brownout 长稳（建议加强电源；软件仅错峰延时）
+### Endpoint 地址配置
 
-**说明：** 串口通信栈可作阶段性验收；整机产品替换尚未结项。
+默认值编译于 `common.h` 的 `AWS_IOT_ENDPOINT_DEFAULT`，运行时存 NVS（`config_cfg` 命名空间 key `aws_url`），与 WiFi 账号同生命周期：
+
+- App 配网时可下发 `aws_url` 字段（`app_control.c` BLE 命令解析），与 ssid/passwd 一起持久化；
+- 未配置时回落到默认 endpoint。
+
+### 设备 ID
+
+`storage` 分区 **offset 0** 起 20 字节 NUL 结尾字符串（`ALIYUN_BURN=1`）。
+> 注意：旧涂鸦布局为 20(PK)+20(name)+50(secret)，旧数据残留会把 PK 当设备ID读出——产测必须按新布局重烧 `storage`。分区不存在或未烧录时回落到 `DEVEICE_ID` 宏。
+
+### MQTT Topic（`{id}` = 设备ID）
+
+| Topic | 方向 | 用途 |
+|-------|------|------|
+| `{id}/user/5s/put` | 发布 | 5s 实时数据 |
+| `{id}/user/60s/put` | 发布 | 60s 数据 |
+| `{id}/user/sa/put` | 发布 | SA 数据 |
+| `{id}/user/sleep/put` | 发布 | 睡眠报告 |
+| `{id}/user/cli/get` | 订阅 | 云端 CLI 下发（主芯片 / 床控共用） |
+| `{id}/user/cli/put` | 发布 | CLI 应答 |
+| `{id}/user/mccli/put` | 发布 | 床控 CLI 应答 |
+| `ota/device/upgrade/{id}` | 订阅 | OTA 升级指令 |
+| `ota/device/inform/{id}` | 发布 | OTA 版本上报 |
+| `ota/device/progress/{id}` | 发布 | OTA 进度 |
+
+> AWS IoT 策略需为设备证书放行以上 topic 的 connect/subscribe/publish。
+
+---
+
+## 证书烧录（产测流程）
+
+证书文件放在 `components/use_wifi/certs/`：
+
+```
+AmazonRootCA1.pem                  # 公开根证书，随仓库分发
+<DeviceId>.cert.pem                # 每台设备的设备证书（不入库，.gitignore 已排除）
+<DeviceId>.private.key             # 每台设备的设备私钥（不入库，.gitignore 已排除）
+```
+
+一键生成 + 烧录 `nvs_certs` 分区（依赖本机 ESP-IDF，路径自动探测）：
+
+```powershell
+.\make_certs_bin.ps1 -DeviceId KSSLBED00000001              # 仅生成 certs_bin\nvs_certs_<id>.bin
+.\make_certs_bin.ps1 -DeviceId KSSLBED00000001 -Flash       # 生成并烧录（默认 COM3）
+.\make_certs_bin.ps1 -DeviceId KSSLBED00000001 -Flash -Port COM5
+```
+
+脚本内部用 IDF 的 `nvs_partition_gen.py` 打包（NVS v2）、`parttool.py` 按分区名烧录，分区偏移自动从设备分区表读取。
+
+---
+
+## OTA
+
+- **主片 OTA**：`ota/device/upgrade/{id}` 指令 → HTTPS 下载（校验 Amazon Root CA 1）→ 写 `ota_0/ota_1` 双分区 → 重启。
+- **传感器固件 OTA**：云端下发 → HTTPS 下载落盘 → UART port4 刷写（详见 `use_ota.c`）。
+- **常驻启动器**（`ota_launcher_init`，开机创建）：MQTT 指令到达时零内存触发信号量；启动器先 **stop MQTT**（释放 esp-mqtt 任务栈约 20KB + TLS 内存），确保内部 RAM 足够创建 OTA 任务；任务创建失败会清标志并恢复 MQTT，成功路径设备重启。
+- 下载过程每 10% 打一条进度日志。
 
 ---
 
@@ -83,21 +138,36 @@ CLI 文本仍用逻辑地址，例如 `set addr 3`（不是 `set addr 51`）。
 
 ---
 
+## 分区表（16MB Flash）
+
+| 分区 | 类型 | 大小 | 用途 |
+|------|------|------|------|
+| nvs | data/nvs | 0x4000 | 业务配置（`config_cfg`：wifiSsid / wifiPasswd / **aws_url** / snore_param） |
+| otadata | data/ota | 0x2000 | OTA 启动选择 |
+| phy_init | data/phy | 0x1000 | RF 校准 |
+| factory | app | 2M | 出厂固件 |
+| ota_0 / ota_1 | app | 各 2M | OTA 双分区 |
+| storage | data/fat | 8M | **设备ID（offset 0）**、传感器固件落盘 |
+| nvs_certs | data/nvs | 0x8000 | **AWS 三证书（root_ca / dev_cert / dev_key）** |
+
+---
+
 ## 目录结构
 
 ```
 SU3_ESP32/
-├── main/                    # app_main：NVS → device_init → BLE/WiFi → app_control
+├── main/                    # app_main：NVS → device_init → BLE/WiFi → app_control → OTA 启动器
 ├── components/
 │   ├── SU3/                 # 传感器通信栈（对外 su3_client.h）
-│   ├── app_control/         # 业务：hello/上报/床控/打鼾等
-│   ├── common/              # 配置、NVS、GPIO12 供电
+│   ├── app_control/         # 业务：配网(BLE+aws_url)、上报、床控、打鼾
+│   ├── common/              # 配置、NVS、storage 分区设备ID读取
 │   ├── protobuf/            # keesoncloud / qs_protobuf
-│   ├── use_wifi/            # WiFi、MQTT、OTA
-│   ├── use_ble_server/      # BLE GATT
+│   ├── use_wifi/            # WiFi、AWS MQTT、OTA；certs/ 为证书源文件目录
+│   ├── use_ble_server/      # BLE GATT 配网/透传
 │   ├── use_uart/            # MFP 等 UART 辅助
 │   ├── use_mfp/             # 床控协议
-│   ├── use_adc/ · use_pwm/
+│   └── use_adc/ · use_pwm/
+├── make_certs_bin.ps1       # AWS 证书打包/烧录脚本（产测用）
 ├── docs/                    # 架构、协议、原理图
 ├── my_partitions.csv
 └── sdkconfig / sdkconfig.defaults
@@ -109,24 +179,14 @@ SU3_ESP32/
 
 | 项目 | 要求 |
 |------|------|
-| 芯片 | ESP32 |
-| IDF | 建议 4.4.x（与现有 `sdkconfig` 一致） |
-| 工具 | VS Code / Cursor + Espressif IDF 插件，或 `idf.py` |
+| 芯片 | ESP32（16MB Flash） |
+| IDF | v4.4.x（与 `sdkconfig` 一致） |
+| 工具 | VS Code + Espressif IDF 插件，或 `idf.py` |
 
 ```bash
 idf.py set-target esp32
 idf.py build
 idf.py -p COMx flash monitor
-```
-
-分区表：根目录 [`my_partitions.csv`](my_partitions.csv)。
-
-### Git 基线
-
-```bash
-git checkout su3-bringup-20260716   # 联调基线标签
-# 或
-git log -1                          # 查看当前提交
 ```
 
 ---
@@ -135,35 +195,12 @@ git log -1                          # 查看当前提交
 
 | 模块 | 说明 |
 |------|------|
-| **SU3 传感器** | UART1；1s / 1min / SA / 睡眠报告等 protobuf；双路地址 03/06 |
-| **WiFi + MQTT** | STA；涂鸦 IoT（阿里云版）动态签名 |
-| **BLE** | 配网、透传、床控 |
+| **SU3 传感器** | UART1；1s / 1min / SA / 睡眠报告 protobuf；双路地址 03/06 |
+| **WiFi + MQTT** | STA；AWS IoT Core mTLS 8883，证书来自 `nvs_certs` 分区 |
+| **BLE** | 配网（ssid/passwd/**aws_url**）、透传、床控 |
 | **MFP** | UART2 床控盒、打鼾干预 |
-| **OTA** | ESP32 应用 HTTPS 双分区；传感器 OTA 未实现 |
+| **OTA** | 主片 HTTPS 双分区 + 传感器串口 OTA；常驻启动器，OTA 前停 MQTT 释放内存 |
 | **上报** | JSON 经 MQTT / BLE（带 `side` / `sensor` 字段） |
-
----
-
-## 联调日志参考
-
-正常上电片段：
-
-```text
-I (...) common: SU3 power EN GPIO12 = 1
-I (...) common: SU3 power settle 500ms done
-I (...) su3_client: su3_init ok ... self=0x37 L=0x33 R=0x36 pins tx=22 rx=26
-I (...) su3_client: cli ... cmd="hello" ...
-I (...) control: hello side=0 src=0x33
-I (...) control: setup side=0 dest=0x33: set addr 3
-I (...) control: setup addr rsp=ok
-I (...) su3_client: rx stats: bytes=... frame_ok=... crc_fail=0 overflow=0
-```
-
-| 现象 | 含义 |
-|------|------|
-| `bytes` 持续增加 | 累计收字节（传感器在持续发） |
-| `crc_fail=0` | 帧校验正常 |
-| `Brownout detector` | 供电瞬时掉压（WiFi 发射 + 传感器上电） |
 
 ---
 
@@ -191,4 +228,5 @@ I (...) su3_client: rx stats: bytes=... frame_ok=... crc_fail=0 overflow=0
 
 | 日期 | 说明 |
 |------|------|
+| 2026-11-06 | AWS IoT 迁移：mTLS 证书分区化（nvs_certs）、endpoint 可配、设备ID offset 0、OTA 常驻启动器、证书烧录脚本 |
 | 2026-07-16 | 初版 README：SU3 通信栈联调基线、硬件与进度说明 |

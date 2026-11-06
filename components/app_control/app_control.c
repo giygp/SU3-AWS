@@ -221,6 +221,21 @@ int ble_data_parser_cb(uint8_t *data)
             }
             memset(device_info->wifi.one_key_config.passwd, 0, 64);
             memcpy(device_info->wifi.one_key_config.passwd, thirdItem->valuestring, strlen(thirdItem->valuestring));
+
+            /* Optional AWS IoT endpoint address; persisted together with wifi creds */
+            thirdItem = cJSON_GetObjectItem(cmdItem, "aws_url");
+            if (thirdItem && thirdItem->valuestring && thirdItem->valuestring[0] != '\0') {
+                size_t addr_len = strlen(thirdItem->valuestring);
+                if (addr_len < sizeof(device_info->wifi.one_key_config.iot_addr)) {
+                    memset(device_info->wifi.one_key_config.iot_addr, 0,
+                           sizeof(device_info->wifi.one_key_config.iot_addr));
+                    memcpy(device_info->wifi.one_key_config.iot_addr,
+                           thirdItem->valuestring, addr_len);
+                    ESP_LOGI(TAG, "app set aws_url=%s", device_info->wifi.one_key_config.iot_addr);
+                } else {
+                    ESP_LOGW(TAG, "app aws_url too long (%u), ignored", (unsigned)addr_len);
+                }
+            }
             if(get_mqtt_status())
             {
                 esp_mqtt_client_stop(client);

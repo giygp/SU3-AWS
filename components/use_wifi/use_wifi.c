@@ -25,7 +25,6 @@
 #include "lwip/dns.h"
 #include "lwip/ip_addr.h"
 #include <lwip/netdb.h>
-#include "aiot_mqtt_sign.h"
 #include "cJSON.h"
 #include "mqtt_client.h"
 #include <errno.h>
@@ -47,13 +46,12 @@
 #define MAXIMUM_RETRY_WIFI (5)
 #define MAXIMUM_RETRY_SNTP (60)
 
-/* 涂鸦（iot.smartbed.ink）MQTT：TLS + 动态 timestamp 签名，对齐 ESP_BC */
-#define TUYA_MQTT_BROKER_PORT 1883
-/**
- * aiotMqttSign 最后一参：与 clientId 里 securemode 一致。
- * 1 = securemode=2（TLS）；0 = securemode=3（明文 TCP）。
- */
-#define TUYA_MQTT_SIGN_SECUREMODE_TLS_STYLE 1
+/* AWS IoT Core MQTT: mutual TLS (x.509) on port 8883.
+ * Server CA / device certificate / device private key are read at connect time
+ * from the dedicated "nvs_certs" NVS partition (keys written by factory bin):
+ *   namespace "certs": "root_ca", "dev_cert", "dev_key" (PEM blobs) */
+#define AWS_MQTT_BROKER_PORT 8883
+#define AWS_CERT_BUF_SIZE 2048
 
 // topic
 
@@ -66,41 +64,62 @@ char user_sleep_data_publish_topic[64] = {0};
 char user_cli_data_subscribe_topic[64] = {0};
 char user_cli_data_publish_topic[64] = {0};
 char ota_upgrade_subscribe_topic[64] = {0};
-char mqtt_connect_aliyun_url[64] = {0};
+char mqtt_connect_aws_url[128] = {0};
 /** mqtts://host:端口，生命周期需覆盖 MQTT 客户端存续期 */
-static char s_mqtt_uri[128];
+static char s_mqtt_uri[160];
 char mc_cli_data_subscribe_topic[64] = {0};
 char mc_cli_data_publish_topic[64] = {0};
-static const char s_mqtt_ca_cert[] =
-"-----BEGIN CERTIFICATE-----\n"
-"MIIEBTCCAu2gAwIBAgIUOiMDlRFu6/Snmcl3ajKz0WcXM5swDQYJKoZIhvcNAQEL\n"
-"BQAwgZAxCzAJBgNVBAYTAkNOMREwDwYDVQQIDAhaaGVKaWFuZzEQMA4GA1UEBwwH\n"
-"SmlhWGluZzEPMA0GA1UECgwGS2Vlc29uMQwwCgYDVQQLDANEJlIxGTAXBgNVBAMM\n"
-"EGlvdC5zbWFydGJlZC5pbmsxIjAgBgkqhkiG9w0BCQEWE3NxbC5zb25nQGtlZXNv\n"
-"bi5jb20wIBcNMjYwNjA4MDAyMzE3WhgPMjEyNjA1MTUwMDIzMTdaMIGQMQswCQYD\n"
-"VQQGEwJDTjERMA8GA1UECAwIWmhlSmlhbmcxEDAOBgNVBAcMB0ppYVhpbmcxDzAN\n"
-"BgNVBAoMBktlZXNvbjEMMAoGA1UECwwDRCZSMRkwFwYDVQQDDBBpb3Quc21hcnRi\n"
-"ZWQuaW5rMSIwIAYJKoZIhvcNAQkBFhNzcWwuc29uZ0BrZWVzb24uY29tMIIBIjAN\n"
-"BgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAicRN0yZQuG+m6DgivDWDa3O02xJf\n"
-"oqE+ho0V1O8lrWahS42lrRKbLWQRyKaXfNseNQklJg+J2AueDt4oAfzAhQg3Pn1/\n"
-"SufwwtujTLPpfXNqgBbm6tF9DlVL+ML66FdOFXcUCT3uRD599pPIP99u4dS02OsV\n"
-"7O5drbn6GQTFWm26gjwLN12fOf0BgsjnQ1ugQ44YJR7kzIRny47kl3zzoLj2WMm2\n"
-"0Mf3R0OuKXZ/WuUcxZSMwNMLMeToFIjoKFbB24w5vBv2YkduB/F6w2QzPFK9zAf4\n"
-"wf4zn+UDbIHkD4WVbLwUG/d4xEECjpAYCP+qCB1DL8tbiZxjDF9svGr7dQIDAQAB\n"
-"o1MwUTAdBgNVHQ4EFgQU8wf5AZDvjUrJIHsK9eZTJpu79bIwHwYDVR0jBBgwFoAU\n"
-"8wf5AZDvjUrJIHsK9eZTJpu79bIwDwYDVR0TAQH/BAUwAwEB/zANBgkqhkiG9w0B\n"
-"AQsFAAOCAQEAh33JCkUzAyiUMLhOKWQmhkso5T/n1WsShTL5saNI5E2+k5VvOUqU\n"
-"o3s+IWc5Jg7biH05GyvXPk+laAkgP1ImsnTijNznzJRxJqGVOYSNViyfB1VxcdwS\n"
-"0WH/qSk/ZZxPNcS1rlRloLVmtEwoQo/EHN0hndHE3qNnmQanokHSfuRRsTltjObf\n"
-"+kaU/ewFoAaRMe80hfNSqSBylR+euetT31YQ7dZZSf5qecOFEOPHauNOpsHGa7d4\n"
-"Wv+4RO+c5jrfCXFMUdzPqUJpTuLCFWL9wH6xnBr4Aletklik+AJz56cTzB4jWDHa\n"
-"CxXCO4hhMTdGsPU3m5KzWO+bq0mo1Gr+BQ==\n"
-"-----END CERTIFICATE-----\n";
+static const char *TAG = "wifi station";
+/* AWS x.509 material loaded from the "nvs_certs" partition */
+static char s_aws_server_cert[AWS_CERT_BUF_SIZE];
+static char s_aws_device_cert[AWS_CERT_BUF_SIZE];
+static char s_aws_device_key[AWS_CERT_BUF_SIZE];
+
+static bool aws_load_cert_blob(nvs_handle_t h, const char *key, char *buf, size_t buf_size)
+{
+    size_t len = buf_size - 1U;
+    esp_err_t err = nvs_get_blob(h, key, buf, &len);
+    if (err != ESP_OK) {
+        /* also accept string entries */
+        err = nvs_get_str(h, key, buf, &len);
+    }
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "nvs_certs: read '%s' failed: %s", key, esp_err_to_name(err));
+        return false;
+    }
+    buf[len] = '\0';
+    return true;
+}
+
+static bool aws_certs_load(void)
+{
+    esp_err_t err = nvs_flash_init_partition("nvs_certs");
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "nvs_certs init failed: %s (partition flashed?)", esp_err_to_name(err));
+        return false;
+    }
+    nvs_handle_t h;
+    err = nvs_open_from_partition("nvs_certs", "certs", NVS_READONLY, &h);
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "nvs_certs open namespace 'certs' failed: %s", esp_err_to_name(err));
+        return false;
+    }
+    bool ok = aws_load_cert_blob(h, "root_ca", s_aws_server_cert, sizeof(s_aws_server_cert)) &&
+              aws_load_cert_blob(h, "dev_cert", s_aws_device_cert, sizeof(s_aws_device_cert)) &&
+              aws_load_cert_blob(h, "dev_key", s_aws_device_key, sizeof(s_aws_device_key));
+    nvs_close(h);
+    if (ok) {
+        ESP_LOGI(TAG, "AWS certs loaded from nvs_certs (ca=%uB cert=%uB key=%uB)",
+                 (unsigned)strlen(s_aws_server_cert),
+                 (unsigned)strlen(s_aws_device_cert),
+                 (unsigned)strlen(s_aws_device_key));
+    }
+    return ok;
+}
 
 extern char last_saved_ssid[32];
 extern char last_saved_passwd[64];
 
-static const char *TAG = "wifi station";
 int s_retry_num = 0;
 static int s_mqtt_retry_num = 0;
 static uint8_t s_sntp_started = 0;
@@ -314,6 +333,7 @@ static void event_handler(void *arg, esp_event_base_t event_base,
             ESP_ERROR_CHECK(nvs_open("config_cfg", NVS_READWRITE, &nvs_config_handler));
             ESP_ERROR_CHECK(nvs_set_str(nvs_config_handler, "wifiSsid", device_info->wifi.one_key_config.ssid));
 		    ESP_ERROR_CHECK(nvs_set_str(nvs_config_handler, "wifiPasswd", device_info->wifi.one_key_config.passwd));
+            ESP_ERROR_CHECK(nvs_set_str(nvs_config_handler, "aws_url", device_info->wifi.one_key_config.iot_addr));
             ESP_ERROR_CHECK(nvs_commit(nvs_config_handler));
 	        nvs_close(nvs_config_handler);
             strncpy(last_saved_ssid, (char *)device_info->wifi.one_key_config.ssid, sizeof(last_saved_ssid));
@@ -356,21 +376,21 @@ static void mqtt_event_handler(void *handler_args, esp_event_base_t base, int32_
             set_one_key_config_wifi_status(0);  
         }
         set_mqtt_status(1);
-        sprintf(user_5s_data_publish_topic, "/%s/%s/user/5s/put", device_info->aliyun.product_key, device_info->aliyun.device_id);
-        sprintf(user_60s_data_publish_topic, "/%s/%s/user/60s/put", device_info->aliyun.product_key, device_info->aliyun.device_id);
-        sprintf(user_sa_data_publish_topic, "/%s/%s/user/sa/put", device_info->aliyun.product_key, device_info->aliyun.device_id);
-        sprintf(user_sleep_data_publish_topic, "/%s/%s/user/sleep/put", device_info->aliyun.product_key, device_info->aliyun.device_id);
-        
-        sprintf(user_cli_data_subscribe_topic, "/%s/%s/user/cli/get", device_info->aliyun.product_key, device_info->aliyun.device_id); 
-        sprintf(user_cli_data_publish_topic, "/%s/%s/user/cli/put", device_info->aliyun.product_key, device_info->aliyun.device_id);
-        
-        sprintf(ota_upgrade_subscribe_topic,  "/ota/device/upgrade/%s/%s",device_info->aliyun.product_key, device_info->aliyun.device_id);
-        sprintf(ota_infor_publish_topic,  "/ota/device/inform/%s/%s",device_info->aliyun.product_key, device_info->aliyun.device_id);
-        sprintf(ota_progress_publish_topic, "/ota/device/progress/%s/%s",
-                device_info->aliyun.product_key, device_info->aliyun.device_id);
+        /* AWS topics: no product key any more, device id is the only namespace */
+        sprintf(user_5s_data_publish_topic, "%s/user/5s/put", device_info->aliyun.device_id);
+        sprintf(user_60s_data_publish_topic, "%s/user/60s/put", device_info->aliyun.device_id);
+        sprintf(user_sa_data_publish_topic, "%s/user/sa/put", device_info->aliyun.device_id);
+        sprintf(user_sleep_data_publish_topic, "%s/user/sleep/put", device_info->aliyun.device_id);
 
-        sprintf(mc_cli_data_subscribe_topic, "/%s/%s/user/cli/get", device_info->aliyun.product_key, device_info->aliyun.device_id);
-        sprintf(mc_cli_data_publish_topic, "/%s/%s/user/mccli/put", device_info->aliyun.product_key, device_info->aliyun.device_id);
+        sprintf(user_cli_data_subscribe_topic, "%s/user/cli/get", device_info->aliyun.device_id);
+        sprintf(user_cli_data_publish_topic, "%s/user/cli/put", device_info->aliyun.device_id);
+
+        sprintf(ota_upgrade_subscribe_topic,  "ota/device/upgrade/%s", device_info->aliyun.device_id);
+        sprintf(ota_infor_publish_topic,  "ota/device/inform/%s", device_info->aliyun.device_id);
+        sprintf(ota_progress_publish_topic, "ota/device/progress/%s", device_info->aliyun.device_id);
+
+        sprintf(mc_cli_data_subscribe_topic, "%s/user/cli/get", device_info->aliyun.device_id);
+        sprintf(mc_cli_data_publish_topic, "%s/user/mccli/put", device_info->aliyun.device_id);
         printf("%s\n", user_5s_data_publish_topic);
         printf("%s\n", user_60s_data_publish_topic);
         printf("%s\n", user_sa_data_publish_topic);
@@ -709,55 +729,62 @@ static void mqtt_event_handler(void *handler_args, esp_event_base_t base, int32_
     }
 }
 
-void aliyun_mqtt_server(void)
+void aws_mqtt_server(void)
 {
-    char clientid[150] = {0};
-    char username[64] = {0};
-    char password[65] = {0};
+    const char *endpoint = device_info->wifi.one_key_config.iot_addr;
+    if (endpoint == NULL || endpoint[0] == '\0') {
+        endpoint = AWS_IOT_ENDPOINT_DEFAULT;
+    }
 
-    strncpy(mqtt_connect_aliyun_url, "iot.smartbed.ink", sizeof(mqtt_connect_aliyun_url) - 1);
-    mqtt_connect_aliyun_url[sizeof(mqtt_connect_aliyun_url) - 1] = '\0';
-    aiotMqttSign(device_info->aliyun.product_key, device_info->aliyun.device_id,
-                 device_info->aliyun.device_secret, clientid, username, password,
-                 TUYA_MQTT_SIGN_SECUREMODE_TLS_STYLE);
+    if (!aws_certs_load()) {
+        ESP_LOGE(TAG, "AWS certs missing, MQTT client not created");
+        return;
+    }
 
-    ESP_LOGI(TAG, "mqtt broker host=%s", mqtt_connect_aliyun_url);
-    ESP_LOGI(TAG, "mqtt clientid=%s", clientid);
-    ESP_LOGI(TAG, "mqtt username=%s", username);
+    strncpy(mqtt_connect_aws_url, endpoint, sizeof(mqtt_connect_aws_url) - 1);
+    mqtt_connect_aws_url[sizeof(mqtt_connect_aws_url) - 1] = '\0';
+
+    ESP_LOGI(TAG, "mqtt broker host=%s", mqtt_connect_aws_url);
+    ESP_LOGI(TAG, "mqtt clientid=%s (same as device id)", device_info->aliyun.device_id);
 
     if (snprintf(s_mqtt_uri, sizeof(s_mqtt_uri), "mqtts://%s:%d",
-                 mqtt_connect_aliyun_url, TUYA_MQTT_BROKER_PORT)
+                 mqtt_connect_aws_url, AWS_MQTT_BROKER_PORT)
         >= (int)sizeof(s_mqtt_uri)) {
-        ESP_LOGE(TAG, "mqtt uri 过长");
+        ESP_LOGE(TAG, "mqtt uri too long");
+        return;
     }
-    ESP_LOGI(TAG, "mqtt uri=%s (TLS，使用 iot.smartbed.ink CA)", s_mqtt_uri);
+    ESP_LOGI(TAG, "mqtt uri=%s (AWS IoT mutual TLS)", s_mqtt_uri);
 
     esp_mqtt_client_config_t mqtt_cfg = {
         .uri = s_mqtt_uri,
-        .client_id = clientid,
-        .username = username,
-        .password = password,
-        .cert_pem = s_mqtt_ca_cert,
+        .client_id = device_info->aliyun.device_id,
+        .cert_pem = s_aws_server_cert,
+        .client_cert_pem = s_aws_device_cert,
+        .client_key_pem = s_aws_device_key,
         .buffer_size = 1024,
         .task_stack = 1024 * 20,
         .message_retransmit_timeout = 25000,
-        /* 涂鸦文档建议 keepalive 取 300s 以上（范围 30–1200） */
         .keepalive = 300,
+        .network_timeout_ms = 15000,
     };
 
     client = esp_mqtt_client_init(&mqtt_cfg);
+    if (client == NULL) {
+        ESP_LOGE(TAG, "esp_mqtt_client_init failed");
+        return;
+    }
     esp_mqtt_client_register_event(client, ESP_EVENT_ANY_ID, mqtt_event_handler, client);
 }
 
 void use_wifi_mqtt_init_and_start_after_time_sync(void)
 {
-    /* 涂鸦 aiotMqttSign 使用 gettimeofday 毫秒时间戳；SNTP 前签名会导致连接后很快被踢 */
+    /* x.509 校验依赖系统时间：SNTP 前发起 TLS 会因时间不在证书有效期而握手失败 */
     if (client != NULL) {
         esp_mqtt_client_stop(client);
         esp_mqtt_client_destroy(client);
         client = NULL;
     }
-    aliyun_mqtt_server();
+    aws_mqtt_server();
     if (client == NULL) {
         ESP_LOGE(TAG, "MQTT client init failed");
         return;

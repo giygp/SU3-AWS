@@ -1,5 +1,4 @@
 idf_component_register(SRCS "use_wifi.c"
-                            "aiot_mqtt_sign.c"
                             "use_ota.c"
                     INCLUDE_DIRS "."
                                 "../common"

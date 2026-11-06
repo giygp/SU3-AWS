@@ -31,6 +31,9 @@ flash_download_tool/dl_temp/
 # 临时 / 生成
 *.bin
 *.bin_rep
+certs_bin/
+components/use_wifi/certs/*.cert.pem
+components/use_wifi/certs/*.private.key
 id/ID_Generator_Tool/*.exe
 components/protobuf.rar
 

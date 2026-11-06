@@ -9,6 +9,7 @@
 #include <string.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+#include "freertos/semphr.h"
 #include "freertos/event_groups.h"
 #include "esp_system.h"
 #include "esp_event.h"
@@ -26,6 +27,8 @@
 #include "su3_client.h"
 
 static const char *TAG = "ota";
+static void ota_launcher_task(void *pv);
+void ota_launcher_kick(bool is_sensor);
 extern device_info_t *device_info;
 extern esp_mqtt_client_handle_t client;
 extern char ota_infor_publish_topic[64];
@@ -36,7 +39,7 @@ static bool s_mqtt_paused_for_ota = false;
 /* OTA HTTPS 下载前暂停 MQTT TLS，释放内部 RAM 给第二路 mbedTLS（对齐 ESP_BC） */
 static void ota_mqtt_pause_for_download(void)
 {
-    if (client == NULL) {
+    if (client == NULL || s_mqtt_paused_for_ota) {
         return;
     }
     ESP_LOGI(TAG, "OTA pause MQTT for HTTPS download");
@@ -201,9 +204,9 @@ esp_err_t _http_event_handler(esp_http_client_event_t *evt)
 }
 
 /*
- * 与 ESP_BC 相同：cert_pem = GlobalSign + iot.smartbed.ink 自签 CA。
- * 云端 URL 为 https://oss-iot.smartbed.ink/...（私有域名），公网 crt_bundle 验不过。
- * IDF 4.4 下 bundle 与 cert_pem 互斥，此处必须用 cert_pem。
+ * cert_pem = Amazon Root CA 1（AWS ATS 根证书，S3 / CloudFront 的 HTTPS 下载均可用）。
+ * MQTT 连 AWS IoT 的三元组证书在 nvs_certs 分区（use_wifi.c），与 OTA 下载互不相关。
+ * IDF 4.4 下 bundle 与 cert_pem 互斥，此处继续用 cert_pem。
  */
 static void ota_fill_https_cfg(esp_http_client_config_t *cfg, const char *url)
 {
@@ -299,7 +302,7 @@ void advanced_ota_example_task(void *pvParameter)
 {
     ESP_LOGI(TAG, "ESP board OTA start version=%s", device_info->ota.upgrade_version);
     ESP_LOGI(TAG, "url: %s", device_info->ota.url);
-    ESP_LOGI(TAG, "OTA https verify=cert_pem (GlobalSign+tuya CA)");
+    ESP_LOGI(TAG, "OTA https verify=cert_pem (Amazon Root CA 1)");
     log_heap_info("ota_before_https");
     ota_mqtt_pause_for_download();
     esp_err_t ota_finish_err = ESP_OK;
@@ -337,18 +340,26 @@ void advanced_ota_example_task(void *pvParameter)
         goto ota_end;
     }
 
+    int ota_total = esp_https_ota_get_image_size(https_ota_handle);
+    int ota_last_pct = -1;
+    ESP_LOGI(TAG, "ota download start, image size=%d bytes", ota_total);
     while (1)
     {
         err = esp_https_ota_perform(https_ota_handle);
         if (err != ESP_ERR_HTTPS_OTA_IN_PROGRESS)
         {
-            ESP_LOGD(TAG, "https_ota_perform err");
+            ESP_LOGI(TAG, "https_ota_perform end err=0x%x read=%d",
+                     err, esp_https_ota_get_image_len_read(https_ota_handle));
             break;
         }
-        // esp_https_ota_perform returns after every read operation which gives user the ability to
-        // monitor the status of OTA upgrade by calling esp_https_ota_get_image_len_read, which gives length of image
-        // data read so far.
-        ESP_LOGD(TAG, "Image bytes read: %d", esp_https_ota_get_image_len_read(https_ota_handle));
+        if (ota_total > 0) {
+            int ota_read = esp_https_ota_get_image_len_read(https_ota_handle);
+            int ota_pct = ota_read * 100 / ota_total;
+            if (ota_pct != ota_last_pct && (ota_pct % 10) == 0) {
+                ESP_LOGI(TAG, "ota progress %d%% (%d/%d)", ota_pct, ota_read, ota_total);
+                ota_last_pct = ota_pct;
+            }
+        }
     }
 
     if (esp_https_ota_is_complete_data_received(https_ota_handle) != true)
@@ -529,8 +540,9 @@ void ota_start(void)
         ESP_LOGW(TAG, "OTA already in progress, ignore duplicate upgrade");
         return;
     }
+    log_heap_info("ota_start");
     set_ota_now_flag(1);
-    xTaskCreate(advanced_ota_example_task, "advanced_ota_example_task", 1024 * 4, NULL, 1, NULL);
+    ota_launcher_kick(false);
 }
 
 /* ---------- 传感器固件：云端 → ESP 下载落盘（串口 port4 刷写后续再接） ---------- */
@@ -620,7 +632,7 @@ static esp_err_t sensor_fw_http_download(const char *url, uint8_t **out_buf, siz
 {
     esp_http_client_config_t cfg;
     ota_fill_https_cfg(&cfg, url);
-    ESP_LOGI(TAG, "sensor fw https verify=cert_pem (GlobalSign+tuya CA)");
+    ESP_LOGI(TAG, "sensor fw https verify=cert_pem (Amazon Root CA 1)");
     esp_http_client_handle_t client_http;
     int content_len;
     int status;
@@ -826,7 +838,7 @@ void sensor_ota_start(void)
         return;
     }
     set_ota_now_flag(1);
-    xTaskCreate(sensor_ota_download_task, "sensor_ota_dl", 10240, NULL, 5, NULL);
+    ota_launcher_kick(true);
 }
 
 esp_err_t ota_rollback_to_partition(int slot, ota_rollback_result_t *result,
@@ -916,4 +928,65 @@ void ota_rollback_restart(void)
     vTaskDelay(pdMS_TO_TICKS(800));
     esp_restart();
 }
+/* ---------- OTA 启动器：开机常驻，避免指令到达时内部 RAM 不足建不了任务 ---------- */
 
+static SemaphoreHandle_t s_ota_go_sem;
+static volatile bool s_ota_is_sensor;
+static bool s_ota_launcher_ready;
+
+void ota_launcher_init(void)
+{
+    if (s_ota_launcher_ready) {
+        return;
+    }
+    s_ota_go_sem = xSemaphoreCreateBinary();
+    if (s_ota_go_sem == NULL ||
+        xTaskCreate(ota_launcher_task, "ota_launch", 3072, NULL, 5, NULL) != pdPASS) {
+        ESP_LOGE(TAG, "ota launcher init failed");
+        return;
+    }
+    s_ota_launcher_ready = true;
+    ESP_LOGI(TAG, "ota launcher ready");
+}
+
+void ota_launcher_kick(bool is_sensor)
+{
+    if (!s_ota_launcher_ready) {
+        ESP_LOGE(TAG, "ota launcher not ready, clear flag");
+        set_ota_now_flag(0);
+        return;
+    }
+    s_ota_is_sensor = is_sensor;
+    xSemaphoreGive(s_ota_go_sem);
+}
+
+static void ota_launcher_task(void *pv)
+{
+    (void)pv;
+    for (;;) {
+        xSemaphoreTake(s_ota_go_sem, portMAX_DELAY);
+        /* 等 MQTT 事件回调返回后再 stop，避免与客户端任务互锁 */
+        vTaskDelay(pdMS_TO_TICKS(200));
+        /* 先停 MQTT：释放 esp-mqtt 任务栈(约20KB)+TLS 内存，内部 RAM 才够建 OTA 任务 */
+        ota_mqtt_pause_for_download();
+        log_heap_info("ota_mqtt_stopped");
+        BaseType_t ok;
+        if (s_ota_is_sensor) {
+            ok = xTaskCreate(sensor_ota_download_task, "sensor_ota_dl", 10240, NULL, 5, NULL) == pdPASS;
+        } else {
+            ok = xTaskCreate(advanced_ota_example_task, "advanced_ota_example_task", 1024 * 4, NULL, 1, NULL) == pdPASS;
+        }
+        if (ok != pdPASS) {
+            ESP_LOGE(TAG, "OTA task create failed (heap low), clear flag");
+            log_heap_info("ota_task_fail");
+            set_ota_now_flag(0);
+            ota_mqtt_resume_after_download();
+            continue;
+        }
+        /* OTA 任务成功路径会重启；失败/结束路径清标志后兜底恢复 MQTT */
+        while (get_ota_now_flag()) {
+            vTaskDelay(pdMS_TO_TICKS(100));
+        }
+        ota_mqtt_resume_after_download();
+    }
+}
